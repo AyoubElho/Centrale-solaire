@@ -85,12 +85,26 @@ def card(label: str, value: str) -> None:
 @st.cache_resource(show_spinner="Chargement du modèle de prévision…")
 def load_forecast_model(filename: str):
     """Charge un modèle Keras sauvegardé, sans le réentraîner."""
-    import keras
+    keras_mod = None
+    try:
+        import keras
+        keras_mod = keras
+    except ImportError:
+        try:
+            from tensorflow import keras
+            keras_mod = keras
+        except ImportError:
+            st.error("Keras / TensorFlow n'a pas pu être importé. Vérifiez dans les paramètres de Streamlit Cloud que la version de Python est bien 3.11 ou 3.10.")
+            return None
 
     path = MODELS_DIR / filename
     if not path.exists():
         return None
-    return keras.models.load_model(path)
+    try:
+        return keras_mod.models.load_model(path)
+    except Exception as e:
+        st.error(f"Erreur de chargement du modèle {filename} : {e}")
+        return None
 
 
 def date_label(df: pd.DataFrame, index: int) -> str:

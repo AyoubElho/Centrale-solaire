@@ -112,6 +112,17 @@ def load_thermographie_data():
         "defaut_test": data["defaut_test"]
     }
 
+def _get_keras():
+    try:
+        import keras
+        return keras
+    except ImportError:
+        try:
+            from tensorflow import keras
+            return keras
+        except ImportError:
+            return None
+
 @lru_cache(maxsize=1)
 def load_keras_model():
     candidates = [
@@ -126,9 +137,11 @@ def load_keras_model():
             break
     if model_path is None:
         return None
+    k = _get_keras()
+    if k is None:
+        return None
     try:
-        import keras
-        model = keras.models.load_model(model_path)
+        model = k.models.load_model(model_path)
         return model
     except Exception as e:
         warnings.warn(f"Impossible de charger le modèle Keras: {e}")
@@ -136,6 +149,9 @@ def load_keras_model():
 
 @lru_cache(maxsize=1)
 def load_cnn_ciel_model():
+    k = _get_keras()
+    if k is None:
+        return None
     candidates = [
         ROOT_DIR / "models/cnn_ciel.keras",
         Path("models/cnn_ciel.keras"),
@@ -143,14 +159,16 @@ def load_cnn_ciel_model():
     for c in candidates:
         if c.exists():
             try:
-                import keras
-                return keras.models.load_model(c)
+                return k.models.load_model(c)
             except Exception:
                 return None
     return None
 
 @lru_cache(maxsize=1)
 def load_autoencoder_model():
+    k = _get_keras()
+    if k is None:
+        return None
     candidates = [
         ROOT_DIR / "models/autoencodeur_thermographie.keras",
         Path("models/autoencodeur_thermographie.keras"),
@@ -158,8 +176,7 @@ def load_autoencoder_model():
     for c in candidates:
         if c.exists():
             try:
-                import keras
-                return keras.models.load_model(c)
+                return k.models.load_model(c)
             except Exception:
                 return None
     return None
