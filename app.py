@@ -23,6 +23,18 @@ from utils.data_loader import (
 ROOT = Path(__file__).resolve().parent
 MODELS_DIR = ROOT / "models"
 
+def find_data_file(filename: str) -> Path:
+    candidates = [
+        ROOT / "data" / filename,
+        Path("data") / filename,
+        ROOT.parent / "data_UC4" / filename,
+        Path("../data_UC4") / filename,
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return ROOT / "data" / filename
+
 st.set_page_config(page_title="UC4 · SolarDrâa", page_icon="☀️", layout="wide")
 
 
@@ -174,7 +186,7 @@ def show_jalon_2() -> None:
     hero("Voir le ciel. Diagnostiquer les panneaux.", "Deux modèles de vision transforment les images en indicateurs immédiatement compréhensibles pour l’exploitation.")
     tab_sky, tab_thermal = st.tabs(["Image du ciel", "Thermographie panneau"])
     with tab_sky:
-        data = np.load(ROOT / "data" / "uc4_ciel_A.npz")
+        data = np.load(find_data_file("uc4_ciel_A.npz"))
         sample = st.selectbox("Exemple de test ciel", range(len(data["X"])), index=0, key="sky_sample")
         image = Image.fromarray(data["X"][sample].astype(np.uint8))
         arr, cover, occultation = infer_sky_image(image)
@@ -184,7 +196,7 @@ def show_jalon_2() -> None:
         col3.metric("Occultation", f"{occultation:.1%}")
         card("Lecture du modèle", "Image en niveaux de gris · 32×32 · normalisation [0, 1]")
     with tab_thermal:
-        data = np.load(ROOT / "data" / "uc4_thermographie.npz")
+        data = np.load(find_data_file("uc4_thermographie.npz"))
         sample = st.selectbox("Exemple de test thermique", range(len(data["X_test"])), index=0, key="thermal_sample")
         original, reconstruction, diff, mse, max_error, anomaly, threshold = infer_thermal_image(data["X_test"][sample])
         c1, c2, c3 = st.columns(3)

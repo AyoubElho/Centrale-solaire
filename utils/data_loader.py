@@ -1,11 +1,26 @@
-import os
+from pathlib import Path
 import warnings
 from functools import lru_cache
 import numpy as np
 import pandas as pd
 from PIL import Image
 
-DATA_DIR = "data" if os.path.exists("data/uc4_siteA.csv") else "../data_UC4"
+ROOT_DIR = Path(__file__).resolve().parent.parent
+
+def get_data_dir() -> Path:
+    candidates = [
+        ROOT_DIR / "data",
+        Path("data"),
+        ROOT_DIR / "data_UC4",
+        ROOT_DIR.parent / "data_UC4",
+        Path("../data_UC4")
+    ]
+    for c in candidates:
+        if (c / "uc4_siteA.csv").exists():
+            return c
+    return ROOT_DIR / "data"
+
+DATA_DIR = get_data_dir()
 CAPACITE = {"A": 50.0, "B": 20.0}
 H = 6
 
@@ -19,10 +34,20 @@ def ciel_clair(hauteur):
 
 @lru_cache(maxsize=4)
 def load_site_data(site="A"):
-    path = os.path.join(DATA_DIR, f"uc4_site{site}.csv")
-    if not os.path.exists(path):
-        alt_path = f"data_UC4/uc4_site{site}.csv"
-        path = alt_path if os.path.exists(alt_path) else path
+    candidates = [
+        DATA_DIR / f"uc4_site{site}.csv",
+        ROOT_DIR / "data" / f"uc4_site{site}.csv",
+        Path(f"data/uc4_site{site}.csv"),
+        ROOT_DIR / f"data_UC4/uc4_site{site}.csv",
+        ROOT_DIR.parent / f"data_UC4/uc4_site{site}.csv",
+    ]
+    path = None
+    for c in candidates:
+        if c.exists():
+            path = c
+            break
+    if path is None:
+        path = DATA_DIR / f"uc4_site{site}.csv"
     df = pd.read_csv(path)
     df["horodatage"] = pd.to_datetime(df["horodatage"])
     df["ghi_cs"] = ciel_clair(df["hauteur_soleil"].values)
@@ -31,17 +56,29 @@ def load_site_data(site="A"):
 
 @lru_cache(maxsize=8)
 def load_experiments(jalon_num):
-    path = f"experiments/journal_experiences_jalon{jalon_num}.csv"
-    if os.path.exists(path):
-        return pd.read_csv(path)
+    candidates = [
+        ROOT_DIR / f"experiments/journal_experiences_jalon{jalon_num}.csv",
+        Path(f"experiments/journal_experiences_jalon{jalon_num}.csv"),
+    ]
+    for p in candidates:
+        if p.exists():
+            return pd.read_csv(p)
     return pd.DataFrame()
 
 @lru_cache(maxsize=2)
 def load_ciel_data(max_samples=2000):
-    path = os.path.join(DATA_DIR, "uc4_ciel_A.npz")
-    if not os.path.exists(path):
-        path = "data_UC4/uc4_ciel_A.npz"
-    if not os.path.exists(path):
+    candidates = [
+        DATA_DIR / "uc4_ciel_A.npz",
+        ROOT_DIR / "data" / "uc4_ciel_A.npz",
+        Path("data/uc4_ciel_A.npz"),
+        ROOT_DIR.parent / "data_UC4" / "uc4_ciel_A.npz",
+    ]
+    path = None
+    for c in candidates:
+        if c.exists():
+            path = c
+            break
+    if path is None:
         return None
     data = np.load(path)
     n = min(len(data["heure"]), max_samples)
@@ -54,10 +91,18 @@ def load_ciel_data(max_samples=2000):
 
 @lru_cache(maxsize=2)
 def load_thermographie_data():
-    path = os.path.join(DATA_DIR, "uc4_thermographie.npz")
-    if not os.path.exists(path):
-        path = "data_UC4/uc4_thermographie.npz"
-    if not os.path.exists(path):
+    candidates = [
+        DATA_DIR / "uc4_thermographie.npz",
+        ROOT_DIR / "data" / "uc4_thermographie.npz",
+        Path("data/uc4_thermographie.npz"),
+        ROOT_DIR.parent / "data_UC4" / "uc4_thermographie.npz",
+    ]
+    path = None
+    for c in candidates:
+        if c.exists():
+            path = c
+            break
+    if path is None:
         return None
     data = np.load(path)
     return {
@@ -69,10 +114,17 @@ def load_thermographie_data():
 
 @lru_cache(maxsize=1)
 def load_keras_model():
-    model_path = "models/modele_recurrent_solaire_jalon4.keras"
-    if not os.path.exists(model_path):
-        model_path = "modele_recurrent_solaire_jalon4.keras"
-    if not os.path.exists(model_path):
+    candidates = [
+        ROOT_DIR / "models/modele_recurrent_solaire_jalon4.keras",
+        Path("models/modele_recurrent_solaire_jalon4.keras"),
+        Path("modele_recurrent_solaire_jalon4.keras"),
+    ]
+    model_path = None
+    for c in candidates:
+        if c.exists():
+            model_path = c
+            break
+    if model_path is None:
         return None
     try:
         import keras
@@ -84,32 +136,44 @@ def load_keras_model():
 
 @lru_cache(maxsize=1)
 def load_cnn_ciel_model():
-    path = "models/cnn_ciel.keras"
-    if not os.path.exists(path):
-        return None
-    try:
-        import keras
-        return keras.models.load_model(path)
-    except Exception:
-        return None
+    candidates = [
+        ROOT_DIR / "models/cnn_ciel.keras",
+        Path("models/cnn_ciel.keras"),
+    ]
+    for c in candidates:
+        if c.exists():
+            try:
+                import keras
+                return keras.models.load_model(c)
+            except Exception:
+                return None
+    return None
 
 @lru_cache(maxsize=1)
 def load_autoencoder_model():
-    path = "models/autoencodeur_thermographie.keras"
-    if not os.path.exists(path):
-        return None
-    try:
-        import keras
-        return keras.models.load_model(path)
-    except Exception:
-        return None
+    candidates = [
+        ROOT_DIR / "models/autoencodeur_thermographie.keras",
+        Path("models/autoencodeur_thermographie.keras"),
+    ]
+    for c in candidates:
+        if c.exists():
+            try:
+                import keras
+                return keras.models.load_model(c)
+            except Exception:
+                return None
+    return None
 
 @lru_cache(maxsize=1)
 def load_thermographie_stats():
-    path = "models/thermographie_stats.npz"
-    if os.path.exists(path):
-        stats = np.load(path)
-        return float(stats["mean"]), float(stats["std"])
+    candidates = [
+        ROOT_DIR / "models/thermographie_stats.npz",
+        Path("models/thermographie_stats.npz"),
+    ]
+    for c in candidates:
+        if c.exists():
+            stats = np.load(c)
+            return float(stats["mean"]), float(stats["std"])
     return 47.58, 4.48
 
 def infer_thermal_image(img_input):
