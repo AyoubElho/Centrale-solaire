@@ -1,0 +1,10 @@
+jalon,nom,gain_moyen_va,commentaire,couv_mae,occ_mae
+3,1. Modèle A tel quel,0.42234721779823303,,,
+3,2. Entraîné sur B seul,0.38925155997276306,,,
+3,3. Ajustement fin complet,0.4344618320465088,,,
+3,4. Ajustement partiel (1 couche gelée),0.4316083490848541,,,
+3,5. Ajustement partiel (2 couches gelées),0.4319753646850586,,,
+3,CNN lambda=0.0,,,0.022597771137952805,0.4299909472465515
+3,CNN lambda=0.3,,,0.030088648200035095,0.102025605738163
+3,CNN lambda=1.0,,,0.03237790986895561,0.07452195137739182
+3,CNN lambda=3.0,,,0.041673410683870316,0.07416380196809769

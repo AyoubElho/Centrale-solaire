@@ -1,0 +1,16 @@
+jalon,nom,gain_t1_va,gain_t3_va,gain_t6_va,gain_moyen_va,duree_s,params,commentaire
+4,MLP de référence (Site A),-0.233,0.453,0.684,0.4,7.5,5350,MLP tabulaire de référence (47 variables)
+4,GRU(32) Direct L=24 (Site A),0.11,0.469,0.671,0.464,31.1,6054,Modèle récurrent direct (historique 24h x 6 vars)
+4,SimpleRNN(54) Direct L=24,0.033,0.447,0.681,0.445,15.5,6212,RNN Vanilla (sans mécanisme de portes)
+4,LSTM(28) Direct L=24,0.044,0.466,0.678,0.45,27.4,6006,LSTM standard (4 portes)
+4,GRU(32) L=6h,0.118,0.487,0.671,0.472,15.1,6054,Étude longueur historique L=6 heures
+4,GRU(32) L=24h,0.12,0.452,0.667,0.455,30.9,6054,Étude longueur historique L=24 heures
+4,GRU(32) L=48h,0.086,0.45,0.662,0.449,53.1,6054,Étude longueur historique L=48 heures
+4,GRU(32) L=168h,0.094,0.433,0.67,0.449,162.2,6054,Étude longueur historique L=168 heures
+4,Encodeur-Décodeur GRU(32) L=48 (Site A),0.046,0.452,0.681,0.443,62.3,7617,Seq2Seq : Encodeur GRU -> Décodeur GRU séquentiel
+4,Site B - Zero-Shot Direct L=48,-0.042,0.425,0.705,0.423,0.0,6054,Zero-Shot transfer direct sur Site B (Mars)
+4,Site B - Zero-Shot Enc-Dec L=48,-0.09,0.395,0.708,0.4,0.0,7617,Zero-Shot transfer Seq2Seq sur Site B (Mars)
+4,Site B - Fine-Tuning Direct L=48,0.013,0.44,0.716,0.443,15.0,6054,Fine-Tuning sur Janv-Févr B (lr=1e-4)
+4,Site B - Fine-Tuning Enc-Dec L=48,-0.061,0.418,0.712,0.418,18.0,7617,Fine-Tuning Seq2Seq sur Janv-Févr B (lr=1e-4)
+4,TEST FINAL - Modèle Retenu Site A (2025),0.095,0.495,0.722,0.49,0.0,6054,Évaluation sur Test Site A (2025)
+4,TEST FINAL - Site B Zero-Shot (Avril-Juin),0.053,0.386,0.625,0.4,0.0,6054,Évaluation sur Test Site B Zero-Shot
