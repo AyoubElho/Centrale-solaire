@@ -1,0 +1,37 @@
+jalon,experience,variante,partition,metrique,valeur,statut,commentaire,seed
+2,cnn_ciel,Règle simple_Couverture,validation,MAE,0.019061188814125968,comparé,,42
+2,cnn_ciel,CNN Dual Pooling_Couverture,validation,MAE,0.03331397846341133,comparé,,42
+2,cnn_ciel,Règle simple_Occultation,validation,MAE,0.21364024161451095,comparé,,42
+2,cnn_ciel,CNN Dual Pooling_Occultation,validation,MAE,0.05268518254160881,comparé,,42
+2,prevision_6h,MLP_base_47,validation,gain_t1,0.10634458065032959,comparé,,42
+2,prevision_6h,MLP_base_47,validation,gain_t6,0.6814330816268921,comparé,,42
+2,prevision_6h,MLP_base_47,validation,gain_moyen,0.47436198592185974,comparé,,42
+2,prevision_6h,MLP_enrichi_51,validation,gain_t1,0.1483563780784607,retenu,,42
+2,prevision_6h,MLP_enrichi_51,validation,gain_t6,0.6751570701599121,comparé,,42
+2,prevision_6h,MLP_enrichi_51,validation,gain_moyen,0.48483705520629883,comparé,,42
+2,occultation_t1,CNN_paire,validation,MAE,0.0870116725564003,retenu,,42
+2,occultation_t1,persistance,validation,MAE,0.09862080961465836,référence,,42
+2,thermographie_reference,maximum_moins_mediane,validation_proxy,AUC,1.0,référence,Règle simple fournie par le sujet,42
+2,autoencodeur,goulot_16_score_mse,validation_proxy,AUC,1.0,non_retenu,Sélection sans consultation du test réel,42
+2,autoencodeur,goulot_16_score_max,validation_proxy,AUC,1.0,non_retenu,Sélection sans consultation du test réel,42
+2,autoencodeur,goulot_32_score_mse,validation_proxy,AUC,1.0,non_retenu,Sélection sans consultation du test réel,42
+2,autoencodeur,goulot_32_score_max,validation_proxy,AUC,1.0,retenu,Sélection sans consultation du test réel,42
+2,autoencodeur,goulot_128_score_mse,validation_proxy,AUC,1.0,non_retenu,Sélection sans consultation du test réel,42
+2,autoencodeur,goulot_128_score_max,validation_proxy,AUC,1.0,non_retenu,Sélection sans consultation du test réel,42
+2,cnn_ciel,couverture_heur,test_final,MAE,0.0166092913757358,final,,42
+2,cnn_ciel,couverture_cnn,test_final,MAE,0.025233682245016098,final,,42
+2,cnn_ciel,occultation_heur,test_final,MAE,0.15948702748064855,final,,42
+2,cnn_ciel,occultation_cnn,test_final,MAE,0.038847316056489944,final,,42
+2,prevision_6h,MLP enrichi 51 variables,test_final,gain_t1,0.16796839237213135,final,,42
+2,prevision_6h,MLP enrichi 51 variables,test_final,gain_t2,0.38747459650039673,final,,42
+2,prevision_6h,MLP enrichi 51 variables,test_final,gain_t3,0.5310224294662476,final,,42
+2,prevision_6h,MLP enrichi 51 variables,test_final,gain_t4,0.628972053527832,final,,42
+2,prevision_6h,MLP enrichi 51 variables,test_final,gain_t5,0.6897058486938477,final,,42
+2,prevision_6h,MLP enrichi 51 variables,test_final,gain_t6,0.7246997356414795,final,,42
+2,occultation_t1,CNN paire,test_final,MAE,0.0675463005900383,final,,42
+2,autoencodeur,goulot_32_score_max,test_final,AUC,0.985875,final,,42
+2,thermographie_reference,maximum_moins_mediane,test_final,AUC,0.9739180555555556,référence,,42
+2,autoencodeur,defaut_1,test_final,taux_detection,1.0,final,,42
+2,autoencodeur,defaut_2,test_final,taux_detection,0.88,final,,42
+2,autoencodeur,defaut_3,test_final,taux_detection,1.0,final,,42
+2,autoencodeur,defaut_4,test_final,taux_detection,1.0,final,,42

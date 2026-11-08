@@ -232,8 +232,8 @@ def infer_thermal_image(img_input):
     diff = np.abs(arr - recon)
     mse = float(np.mean((arr - recon) ** 2))
     max_err = float(np.max(diff))
-    # Threshold from Jalon 2 calibrated at 95th percentile
-    seuil_max = 0.2393 * std_th if std_th < 10 else 2.5
+    # Threshold from Jalon 2 calibrated at 95th percentile on validation set (~2.38°C)
+    seuil_max = 0.5303 * std_th if std_th < 10 else 2.38
     is_anomaly = max_err > seuil_max
 
     return arr, recon, diff, mse, max_err, is_anomaly, seuil_max

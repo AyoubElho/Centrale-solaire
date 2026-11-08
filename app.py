@@ -6,10 +6,15 @@ Lancer depuis le dossier ``jalons`` :
 
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
 from PIL import Image
+
+CENTRAL_NAME = "SolarDrâa"
 
 from utils.data_loader import (
     CAPACITE,
@@ -35,7 +40,7 @@ def find_data_file(filename: str) -> Path:
             return c
     return ROOT / "data" / filename
 
-st.set_page_config(page_title="UC4 · SolarDrâa", page_icon="☀️", layout="wide")
+st.set_page_config(page_title=f"UC4 · {CENTRAL_NAME}", page_icon="☀️", layout="wide")
 
 
 def apply_design() -> None:
@@ -72,7 +77,7 @@ def apply_design() -> None:
 
 def hero(title: str, description: str, badge: str = "Modèles sauvegardés · Inférence locale") -> None:
     st.markdown(
-        f"""<section class="hero"><div class="eyebrow">SolarDrâa · Intelligence Artificielle Avancée</div>
+        f"""<section class="hero"><div class="eyebrow">{CENTRAL_NAME} · Intelligence Artificielle Avancée</div>
         <h1>{title}</h1><p>{description}</p><span class="status-pill">● {badge}</span></section>""",
         unsafe_allow_html=True,
     )
@@ -201,25 +206,143 @@ def show_jalon_2() -> None:
     tab_sky, tab_thermal = st.tabs(["Image du ciel", "Thermographie panneau"])
     with tab_sky:
         data = np.load(find_data_file("uc4_ciel_A.npz"))
-        sample = st.selectbox("Exemple de test ciel", range(len(data["X"])), index=0, key="sky_sample")
+        n_samples = len(data["X"])
+        sample = st.selectbox(
+            "Exemple de test ciel",
+            range(n_samples),
+            index=0,
+            format_func=lambda i: f"Échantillon #{i} — {int(data['heure'][i]):02d}:00 (Couv. réelle: {float(data['couverture'][i]):.1%}, Occultation: {float(data['occultation'][i]):.1%})",
+            key="sky_sample",
+        )
         image = Image.fromarray(data["X"][sample].astype(np.uint8))
         arr, cover, occultation = infer_sky_image(image)
-        col1, col2, col3 = st.columns([1.35, 1, 1])
-        col1.image(arr, caption="Image normalisée 32×32", clamp=True)
-        col2.metric("Couverture nuageuse", f"{cover:.1%}")
-        col3.metric("Occultation", f"{occultation:.1%}")
-        card("Lecture du modèle", "Image en niveaux de gris · 32×32 · normalisation [0, 1]")
+        real_cover = float(data["couverture"][sample])
+        real_occ = float(data["occultation"][sample])
+        hour = int(data["heure"][sample])
+
+        col1, col2, col3 = st.columns([1.4, 1, 1])
+        with col1:
+            fig, ax = plt.subplots(figsize=(4.5, 3.6), dpi=120)
+            fig.patch.set_facecolor("#0b1e2d")
+            ax.set_facecolor("#0b1e2d")
+            im = ax.imshow(arr, cmap="Blues_r", vmin=0.0, vmax=1.0)
+            ax.set_title(f"Image Ciel (32×32) · {hour:02d}:00", color="#f8c65a", fontsize=11, fontweight="bold", pad=8)
+            ax.tick_params(colors="#8eb5c9", labelsize=8)
+            for spine in ax.spines.values():
+                spine.set_color("#24445a")
+            cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+            cbar.ax.tick_params(colors="#8eb5c9", labelsize=8)
+            cbar.set_label("Intensité normalisée [0, 1]", color="#8eb5c9", fontsize=8)
+            fig.tight_layout()
+            st.pyplot(fig, use_container_width=True)
+            plt.close(fig)
+
+        with col2:
+            st.metric("Couverture nuageuse", f"{cover:.1%}", delta=f"Écart: {cover - real_cover:+.1%}")
+            card("Cible terrain réelle", f"Couverture mesurée : <strong>{real_cover:.1%}</strong>")
+        with col3:
+            st.metric("Occultation solaire", f"{occultation:.1%}", delta=f"Écart: {occultation - real_occ:+.1%}")
+            card("Cible terrain réelle", f"Occultation mesurée : <strong>{real_occ:.1%}</strong>")
+
+        card(
+            "Lecture du modèle CNN Ciel",
+            f"Image 32×32 pixels · Prétraitement [0, 1] · Dual-Pooling (Moyenne + Max) · Échantillon #{sample} capturé à {hour:02d}:00.",
+        )
+
     with tab_thermal:
         data = np.load(find_data_file("uc4_thermographie.npz"))
-        sample = st.selectbox("Exemple de test thermique", range(len(data["X_test"])), index=0, key="thermal_sample")
+        def_names = {
+            0: "Panneau sain",
+            1: "D1 : Point chaud (Hotspot)",
+            2: "D2 : Fissure de cellule",
+            3: "D3 : Défaillance diode by-pass",
+            4: "D4 : Déconnexion sous-module",
+        }
+        st.markdown(
+            "**Sélection rapide :** "
+            "Échantillons d'intérêt : "
+            "• **#0** (Sain) • **#19** (Hotspot D1) • **#1** (Fissure D2) • **#13** (Diodes D3) • **#15** (Sous-module D4)"
+        )
+        def label_thermal_sample(i: int) -> str:
+            d_val = int(data["defaut_test"][i])
+            return f"Échantillon #{i} — {def_names.get(d_val, f'Défaut {d_val}')}"
+
+        sample = st.selectbox(
+            "Exemple de test thermique",
+            range(len(data["X_test"])),
+            index=0,
+            format_func=label_thermal_sample,
+            key="thermal_sample",
+        )
         original, reconstruction, diff, mse, max_error, anomaly, threshold = infer_thermal_image(data["X_test"][sample])
+        defaut_reel = int(data["defaut_test"][sample])
+
+        # Échelle de température commune pour comparaison directe
+        t_min = min(float(np.min(original)), float(np.min(reconstruction)))
+        t_max = max(float(np.max(original)), float(np.max(reconstruction)))
+
         c1, c2, c3 = st.columns(3)
-        c1.image(original, caption="Mesure (°C)", clamp=True)
-        c2.image(reconstruction, caption="Reconstruction", clamp=True)
-        c3.image(diff, caption="Erreur absolue", clamp=True)
+        with c1:
+            fig1, ax1 = plt.subplots(figsize=(4.2, 3.2), dpi=120)
+            fig1.patch.set_facecolor("#0b1e2d")
+            ax1.set_facecolor("#0b1e2d")
+            im1 = ax1.imshow(original, cmap="inferno", vmin=t_min, vmax=t_max, aspect="auto")
+            ax1.set_title("Mesure thermique (°C)", color="#f8c65a", fontsize=11, fontweight="bold", pad=8)
+            ax1.tick_params(colors="#8eb5c9", labelsize=8)
+            for spine in ax1.spines.values():
+                spine.set_color("#24445a")
+            cb1 = fig1.colorbar(im1, ax=ax1, fraction=0.046, pad=0.04)
+            cb1.ax.tick_params(colors="#8eb5c9", labelsize=8)
+            cb1.set_label("Température (°C)", color="#8eb5c9", fontsize=8)
+            fig1.tight_layout()
+            st.pyplot(fig1, use_container_width=True)
+            plt.close(fig1)
+
+        with c2:
+            fig2, ax2 = plt.subplots(figsize=(4.2, 3.2), dpi=120)
+            fig2.patch.set_facecolor("#0b1e2d")
+            ax2.set_facecolor("#0b1e2d")
+            im2 = ax2.imshow(reconstruction, cmap="inferno", vmin=t_min, vmax=t_max, aspect="auto")
+            ax2.set_title("Reconstruction saine (°C)", color="#f8c65a", fontsize=11, fontweight="bold", pad=8)
+            ax2.tick_params(colors="#8eb5c9", labelsize=8)
+            for spine in ax2.spines.values():
+                spine.set_color("#24445a")
+            cb2 = fig2.colorbar(im2, ax=ax2, fraction=0.046, pad=0.04)
+            cb2.ax.tick_params(colors="#8eb5c9", labelsize=8)
+            cb2.set_label("Température (°C)", color="#8eb5c9", fontsize=8)
+            fig2.tight_layout()
+            st.pyplot(fig2, use_container_width=True)
+            plt.close(fig2)
+
+        with c3:
+            fig3, ax3 = plt.subplots(figsize=(4.2, 3.2), dpi=120)
+            fig3.patch.set_facecolor("#0b1e2d")
+            ax3.set_facecolor("#0b1e2d")
+            vmax_diff = max(float(np.max(diff)), threshold * 1.2, 2.5)
+            im3 = ax3.imshow(diff, cmap="hot", vmin=0.0, vmax=vmax_diff, aspect="auto")
+            ax3.set_title("Erreur absolue |M - R| (°C)", color="#f8c65a", fontsize=11, fontweight="bold", pad=8)
+            ax3.tick_params(colors="#8eb5c9", labelsize=8)
+            for spine in ax3.spines.values():
+                spine.set_color("#24445a")
+            cb3 = fig3.colorbar(im3, ax=ax3, fraction=0.046, pad=0.04)
+            cb3.ax.tick_params(colors="#8eb5c9", labelsize=8)
+            cb3.set_label("Écart (°C)", color="#8eb5c9", fontsize=8)
+            fig3.tight_layout()
+            st.pyplot(fig3, use_container_width=True)
+            plt.close(fig3)
+
         verdict, emoji = ("Anomalie détectée", "⚠️") if anomaly else ("Panneau sain", "✓")
-        st.markdown(f"<div class='info-card'><strong>{emoji} {verdict}</strong><br>Décision issue de l'écart entre mesure et reconstruction.</div>", unsafe_allow_html=True)
-        st.caption(f"MSE = {mse:.4f} · erreur maximale = {max_error:.3f} · seuil calibré = {threshold:.3f}.")
+        status_color = "#e74c3c" if anomaly else "#2ecc71"
+        etat_reel = def_names.get(defaut_reel, f"Défaut {defaut_reel}")
+        
+        st.markdown(
+            f"<div class='info-card' style='border-left: 4px solid {status_color};'>"
+            f"<strong>{emoji} Diagnostic IA : {verdict}</strong> — Vérité terrain : <strong>{etat_reel}</strong><br>"
+            f"Décision basée sur l'écart thermique maximal : <strong>{max_error:.2f}°C</strong> (Seuil d'alerte à 95% = <strong>{threshold:.2f}°C</strong>)."
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        st.caption(f"MSE résiduelle = {mse:.4f} °C² · Écart thermique max = {max_error:.3f} °C · Seuil d'alerte calibré = {threshold:.3f} °C · Matrice 24×40 capteurs.")
 
 
 def show_jalon_3() -> None:
@@ -244,7 +367,7 @@ def show_jalon_4() -> None:
 
 apply_design()
 with st.sidebar:
-    st.markdown("## ☀️ SolarDrâa")
+    st.markdown(f"## ☀️ {CENTRAL_NAME}")
     st.caption("Plateforme IA · UC4")
     st.markdown("---")
     jalon = st.radio("Explorer un jalon", ["Jalon 1 · MLP", "Jalon 2 · Vision", "Jalon 3 · Transfert", "Jalon 4 · GRU"])

@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .venv/
+.venv_solaire/
 .streamlit/
 presentation/*.aux
 presentation/*.log

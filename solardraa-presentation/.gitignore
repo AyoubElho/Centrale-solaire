@@ -1,0 +1,6 @@
+node_modules
+dist
+.venv_solaire/
+.env
+*.local
+.DS_Store
