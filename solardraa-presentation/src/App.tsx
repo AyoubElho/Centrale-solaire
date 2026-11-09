@@ -21,6 +21,28 @@ const C = { cyan: '#67caff', blue: '#4e85ff', dim: '#758aa9', white: '#e4efff', 
 const nf = (n: number, d = 3) => n.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const pct = (n: number, d = 1) => `${nf(n * 100, d)} %`;
 const slideSource = ['notebooks/jalon1_prevoir_production_mlp.ipynb', 'notebooks/uc4_jalon2.ipynb', 'notebooks/uc4_jalon3.ipynb', 'notebooks/uc4_jalon4.ipynb'];
+const figureDescriptions: Record<string, string> = {
+  jalon1_prevoir_production_mlp_cell11_img0: "L’erreur est la plus forte vers 11 h et baisse en fin d’après-midi.",
+  jalon1_prevoir_production_mlp_cell16_img1: "Mars présente l’erreur t+1 la plus élevée du test 2025.",
+  jalon1_ablation_study: "Sans nébulosité, le gain moyen chute le plus : c’est la variable décisive.",
+  jalon1_gains_horizons: "En validation, le gain progresse de t+1 à t+6.",
+  jalon2_cnn_vs_regles_notebook: "Le CNN améliore l’occultation ; la règle reste meilleure pour la couverture.",
+  jalon2_camera_examples_notebook: "Les prédictions suivent les valeurs réelles, avec des écarts selon l’image.",
+  jalon2_detection_thermique_notebook: "La détection des fissures dépasse la cible de 85 % sur le test.",
+  jalon3_cell4_img2: "En validation, les cinq stratégies se rapprochent aux horizons longs.",
+  jalon3_cell6_img2: "Les sites ont un profil solaire proche, mais une clarté matinale différente.",
+  jalon3_cell10_img2: "Ces exemples montrent des écarts ; la MAE du test reste au-dessus de la cible.",
+  jalon4_cell4_img1: "Le GRU réduit la perte de validation et améliore surtout t+1.",
+  jalon4_cell6_img1: "Le GRU obtient le meilleur gain moyen, mais t+1 reste sous 12 %.",
+  jalon4_cell8_img1: "Au-delà de 48 h, le temps augmente sans gain moyen supplémentaire.",
+  jalon4_cell10_img1: "La sortie directe garde un léger avantage, sur A comme sur B.",
+  jalon4_cell14_img1: "Les cibles moyennes A et B sont atteintes ; t+1 A ne l’est pas.",
+};
+const chartDescriptions: Record<string, string> = {
+  'Convergence du MLP de référence': "Les pertes d’entraînement et de validation baissent ensemble.",
+  'Ablation des 47 variables': "Chaque barre montre le gain restant après retrait d’un groupe d’entrées.",
+  'Compromis multitâche': "Le poids λ ajuste l’équilibre entre couverture et occultation.",
+};
 
 function Label({ children }: { children: ReactNode }) { return <span className="label-micro">{children}</span> }
 function Heading({ kicker, title, desc }: { kicker: string, title: string, desc?: string }) {
@@ -57,12 +79,14 @@ function ImagePlate({ name, title, desc, wide = false, hero = false, notebook: _
         </div>
       </div>
       <div className="image-caption"><span>{title}</span>{desc && <small>{desc}</small>}</div>
+      {figureDescriptions[name] && <p className="figure-description">{figureDescriptions[name]}</p>}
     </Card>
   );
 }
 
-function ChartCard({ title, subtitle, children, className = '' }: { title: string, subtitle?: string, children: ReactNode, className?: string }) {
+function ChartCard({ title, subtitle, description, children, className = '' }: { title: string, subtitle?: string, description?: string, children: ReactNode, className?: string }) {
   const { openZoom } = useZoomModal();
+  const takeaway = description ?? chartDescriptions[title];
 
   return (
     <Card
@@ -92,6 +116,7 @@ function ChartCard({ title, subtitle, children, className = '' }: { title: strin
         </div>
       </div>
       <div className="chart-body">{children}</div>
+      {takeaway && <p className="chart-description">{takeaway}</p>}
     </Card>
   );
 }
@@ -117,7 +142,34 @@ function Network({ type }: { type: 'mlp' | 'cnn' | 'ae' | 'gru' }) {
   </div>;
 }
 function LearningChart({ data }: { data: { epoch: number, loss: number, val_loss: number }[] }) { return <ResponsiveContainer width="100%" height="100%"><LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -12 }}><CartesianGrid stroke="#233a55" strokeDasharray="3 6" /><XAxis dataKey="epoch" stroke="#7d96b3" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#adc6e2' }} /><YAxis stroke="#7d96b3" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#adc6e2' }} tickFormatter={v => Number(v).toFixed(v < .01 ? 3 : 2)} /><Tooltip content={<ChartTip />} /><Legend iconType="circle" wrapperStyle={{ fontSize: 13, paddingTop: 6, color: '#e5f2ff' }} /><Line name="Loss" type="monotone" dataKey="loss" stroke={C.cyan} dot={false} strokeWidth={3.1} /><Line name="Validation loss" type="monotone" dataKey="val_loss" stroke={C.gold} dot={false} strokeWidth={2.9} /></LineChart></ResponsiveContainer> }
+function OccultationDiagram() {
+  return (
+    <svg viewBox="0 0 440 150" className="w-full h-full" role="img" aria-label="Images du ciel à t−1 et t, CNN paire, occultation prédite à t+1 : MAE test 0,0675, cible 0,10">
+      <rect x="12" y="15" width="98" height="46" rx="8" fill="#d6e9f7" stroke="#83b9dc" />
+      <text x="61" y="34" textAnchor="middle" fontSize="12" fontWeight="700" fill="#183a5b">Images du ciel</text>
+      <text x="61" y="51" textAnchor="middle" fontSize="13" fill="#183a5b">t−1 et t</text>
+      <path d="M115 38h25m-7-6 7 6-7 6" fill="none" stroke="#66839d" strokeWidth="2" />
+      <rect x="147" y="15" width="100" height="46" rx="8" fill="#d4e7fc" stroke="#81ade8" />
+      <text x="197" y="35" textAnchor="middle" fontSize="13" fontWeight="700" fill="#174484">CNN paire</text>
+      <text x="197" y="51" textAnchor="middle" fontSize="11" fill="#174484">prévision</text>
+      <path d="M252 38h25m-7-6 7 6-7 6" fill="none" stroke="#66839d" strokeWidth="2" />
+      <rect x="284" y="15" width="144" height="46" rx="8" fill="#d6f2e7" stroke="#72c8a3" />
+      <text x="356" y="34" textAnchor="middle" fontSize="12" fontWeight="700" fill="#126242">Occultation</text>
+      <text x="356" y="51" textAnchor="middle" fontSize="13" fill="#126242">prédite à t+1</text>
+      <text x="20" y="84" fontSize="12" fontWeight="700" fill="#183a5b">MAE test : 0,0675</text>
+      <text x="420" y="84" textAnchor="end" fontSize="12" fontWeight="700" fill="#183a5b">Cible : ≤ 0,10</text>
+      <rect x="20" y="95" width="400" height="13" rx="6.5" fill="#ccdce8" />
+      <rect x="20" y="95" width="270" height="13" rx="6.5" fill="#249d72" />
+      <path d="M290 91v21" stroke="#126242" strokeWidth="2" />
+      <path d="M420 90v23" stroke="#e59a28" strokeWidth="2" />
+      <text x="20" y="130" fontSize="11" fill="#43617a">0</text>
+      <text x="290" y="130" textAnchor="middle" fontSize="11" fill="#126242">0,0675</text>
+      <text x="420" y="130" textAnchor="end" fontSize="11" fill="#86560c">0,10</text>
+    </svg>
+  );
+}
 function Content({ page }: { page: number }) {
+  const { openZoom } = useZoomModal();
   switch (page) {
     case 0: return <div className="cover-slide">
       <div className="cover-copy"><div className="overline"><span className="tiny-sun" /> MASTER SDIA · ÉTUDE DE CAS 04</div><h1>Prévoir l'énergie.<br /><span>Comprendre le ciel.</span></h1><p className="cover-lead">Prévision multi-horizons, perception visuelle et transfert d'apprentissage pour une centrale solaire intelligente.</p><div className="cover-pills"><Chip accent>Drâa Solaire</Chip><Chip>Groupe 14</Chip><Chip>Étude scientifique</Chip><Chip>2026 / 2027</Chip></div><div className="cover-line" /><div className="cover-foot"><div><small>CAS D'ÉTUDE</small><strong>Drâa Solaire · Site A</strong></div><div><small>PARCOURS</small><strong>Master SDIA</strong></div><div><small>DOMAINE</small><strong>IA avancée</strong></div></div><div className="cover-team"><div className="cover-team-row"><span className="cover-team-label">RÉALISÉ PAR · GROUPE 14</span><div className="cover-team-members"><div className="cover-team-member">Oussama <strong>FELOUACH</strong></div><div className="cover-team-member">Ayoub <strong>EL HOUANI</strong></div><div className="cover-team-member">Mbarek <strong>ETTALEBY</strong></div></div></div><div className="cover-prof"><span>ENCADRÉ PAR :</span><strong>Pr. Soufiane HAMIDA</strong></div></div></div>
@@ -134,37 +186,85 @@ function Content({ page }: { page: number }) {
     case 9: return <><Heading kicker="04 / EXPÉRIENCES · JALON 01" title="Le MLP franchit la cible moyenne" desc="Les deux figures blanches sont les PNG exacts des cellules 11 et 16 du notebook exécuté ; la convergence est retracée depuis son journal d'entraînement." /><div className="grid lg:grid-cols-3 gap-3 flex-1 min-h-0"><ChartCard title="Convergence du MLP de référence" subtitle="Loss et validation loss · 30 époques · logs du notebook"><LearningChart data={j1Learning} /></ChartCard><ImagePlate name="jalon1_prevoir_production_mlp_cell11_img0" title="Erreur t+1 selon l’heure" desc="Cellule 11 · validation Site A" wide notebook /><ImagePlate name="jalon1_prevoir_production_mlp_cell16_img1" title="Erreur t+1 par mois" desc="Cellule 16 · test caché 2025" wide notebook /></div><div className="grid grid-cols-3 gap-2.5 mt-1"><Metric value="48,2 %" label="Gain moyen · validation" accent="green" /><Metric value="14,4 %" label="Gain t+1 · validation" /><Metric value="50,9 %" label="Gain moyen · test 2025" /></div><Note warning>Le gain t+1 en test J1 est de 10,2 %, inférieur à la cible de 12 %, malgré l'atteinte de la cible moyenne.</Note><Source paths={[slideSource[0]]} /></>;
     case 10: return <><Heading kicker="04 / EXPÉRIENCES · JALON 01" title="Quelles variables expliquent la prévision ?" desc="L'ablation supprime un groupe d'entrées à la fois, puis mesure la baisse du gain moyen en validation. Ici, le notebook publie un tableau texte : les graphiques le visualisent sans modifier les valeurs." /><div className="grid lg:grid-cols-[1.2fr_1fr_1fr] gap-3 flex-1 min-h-0"><ChartCard title="Ablation des 47 variables" subtitle="Gain moyen en %, validation A · sortie cellule 14"><ResponsiveContainer width="100%" height="100%"><BarChart data={ablations} layout="vertical" margin={{ top: 4, right: 10, left: 12, bottom: 2 }}><CartesianGrid stroke="#253955" strokeDasharray="3 6" horizontal={false} /><XAxis type="number" domain={[0, 55]} stroke="#879db7" tickLine={false} tick={{ fontSize: 10 }} /><YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 10, fill: '#bed0e5' }} axisLine={false} tickLine={false} interval={0} /><Tooltip content={<ChartTip />} /><Bar dataKey="gain" name="Gain moyen (%)" radius={[0, 4, 4, 0]} barSize={17}>{ablations.map((_, i) => <Cell key={i} fill={i === 6 ? C.gold : i === 5 ? C.cyan : C.blue} />)}</Bar></BarChart></ResponsiveContainer></ChartCard><Card className="!flex !flex-col"><h3 className="small-title">Interprétation</h3><div className="insight-big"><span>−15,6 pts</span><p>perte imprimée par le notebook ; les gains affichés sont arrondis (48,2 % → 32,5 %).</p></div><div className="divider-soft" /><Bullets items={[<>La <b>nébulosité</b> est la variable la plus déterminante.</>, <>Sans historique, le gain tombe à <b>38,9 %</b>.</>, <>Nettoyage et calendrier ont un effet relatif plus faible.</>]} /></Card><div className="flex flex-col gap-2 min-h-0"><ImagePlate name="jalon1_ablation_study" title="Visualisation du tableau d’ablation" desc="Dérivée de la sortie exécutée · cellule 14" /><ImagePlate name="jalon1_gains_horizons" title="Visualisation des gains par horizon" desc="Dérivée de la sortie exécutée · cellule 10" /></div></div><Source paths={[slideSource[0]]} /></>;
     case 11: return <>
-      <Heading kicker="04 / EXPÉRIENCES · JALON 02" title="Le CNN rend le ciel utile au prévisionniste" desc="Résultats de la nouvelle exécution : quatre variables visuelles enrichissent le MLP, et la paire d'images prédit l'occultation à t+1." />
+      <Heading kicker="04 / EXPÉRIENCES · JALON 02" title="CNN ciel : observer et anticiper l'occultation" desc="Objectif : extraire l'information des images du ciel pour améliorer la prévision et anticiper l'occultation à t+1." />
       <div className="grid lg:grid-cols-3 gap-3 flex-1 min-h-0">
-        <ChartCard title="Apprentissage du CNN ciel" subtitle="MSE train & val · 15 époques · sortie exécutée"><LearningChart data={j2SkyLearning} /></ChartCard>
-        <ChartCard title="Impact sur chaque horizon" subtitle="Gain (%) · validation et test final retenu"><ResponsiveContainer width="100%" height="100%"><LineChart data={j2Forecast} margin={{ top: 6, right: 10, bottom: 0, left: -15 }}><CartesianGrid stroke="#233a55" strokeDasharray="3 6" /><XAxis dataKey="h" stroke="#7d96b3" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} /><YAxis stroke="#7d96b3" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} /><Tooltip content={<ChartTip />} /><Legend wrapperStyle={{ fontSize: 10 }} /><Line dataKey="base" name="MLP seul · val (%)" type="monotone" stroke={C.gold} strokeWidth={2.2} /><Line dataKey="vision" name="MLP + CNN · val (%)" type="monotone" stroke={C.cyan} strokeWidth={2.4} /><Line dataKey="test" name="Retenu · test (%)" type="monotone" stroke={C.green} strokeWidth={2.5} /></LineChart></ResponsiveContainer></ChartCard>
-        <Card className="!flex !flex-col">
-          <h3 className="small-title">Conditions contractuelles · test final</h3>
-          <Table headers={['Condition', 'Résultat', 'Cible', 'Statut']} rows={[
-            ["Gain Site A · t+1", "16,80 %", "≥ 12 %", <span className="status-good">Atteinte</span>],
-            ["MAE occultation · t+1", "0,0675", "≤ 0,10", <span className="status-good">Atteinte</span>]
-          ]} emphasis={[0, 1]} />
-          <div className="mt-2"><Metric value="2 / 2" label="Conditions ciel et prévision atteintes" accent="green" /></div>
-          <p className="explain-text">La règle reste meilleure pour la couverture ({nf(j2Cloud[0].couvertureTest, 4)} vs {nf(j2Cloud[1].couvertureTest, 4)}) ; le CNN réduit fortement l'erreur d'occultation ({nf(j2Cloud[1].occTest, 4)} vs {nf(j2Cloud[0].occTest, 4)}).</p>
+        <ChartCard title="Apprentissage du CNN ciel" subtitle="MSE train & val · 15 époques · sortie exécutée" description="Les erreurs diminuent et restent proches : l'apprentissage se stabilise."><LearningChart data={j2SkyLearning} /></ChartCard>
+        <ChartCard title="Impact sur chaque horizon" subtitle="Gain (%) · validation et test final retenu" description="Le gain augmente avec l'horizon ; validation et test sont distingués."><ResponsiveContainer width="100%" height="100%"><LineChart data={j2Forecast} margin={{ top: 6, right: 10, bottom: 0, left: -15 }}><CartesianGrid stroke="#233a55" strokeDasharray="3 6" /><XAxis dataKey="h" stroke="#7d96b3" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} /><YAxis stroke="#7d96b3" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} /><Tooltip content={<ChartTip />} /><Legend wrapperStyle={{ fontSize: 10 }} /><Line dataKey="base" name="MLP seul · val (%)" type="monotone" stroke={C.gold} strokeWidth={2.2} /><Line dataKey="vision" name="MLP + CNN · val (%)" type="monotone" stroke={C.cyan} strokeWidth={2.4} /><Line dataKey="test" name="Retenu · test (%)" type="monotone" stroke={C.green} strokeWidth={2.5} /></LineChart></ResponsiveContainer></ChartCard>
+        <div className="flex flex-col gap-3 min-h-0">
+          <Card className="!flex !flex-col !p-3">
+            <h3 className="small-title">1 · Cibles de prévision · test final</h3>
+            <Table headers={['Condition', 'Résultat', 'Cible', 'Statut']} rows={[
+              ["Gain Site A · t+1", "16,80 %", "≥ 12 %", <span className="status-good">Atteinte</span>],
+              ["MAE occultation · t+1", "0,0675", "≤ 0,10", <span className="status-good">Atteinte</span>]
+            ]} emphasis={[0, 1]} />
+          </Card>
+          <Card className="!flex !flex-col !p-3">
+            <h3 className="small-title">2 · CNN vs règle simple · test</h3>
+            <Table headers={['MAE', 'Règle', 'CNN']} rows={[
+              ['Couverture', nf(j2Cloud[0].couvertureTest, 4), nf(j2Cloud[1].couvertureTest, 4)],
+              ['Occultation', nf(j2Cloud[0].occTest, 4), nf(j2Cloud[1].occTest, 4)]
+            ]} />
+            <p className="j2-context-note">Estimation sur l'image courante, distincte de la prévision à t+1.</p>
+          </Card>
+        </div>
+      </div>
+      <div className="grid md:grid-cols-3 gap-2 mt-1">
+        <ImagePlate name="jalon2_cnn_vs_regles_notebook" title="CNN ciel vs règles simples" desc="MAE de l'image courante · test final" wide notebook />
+        <ImagePlate name="jalon2_camera_examples_notebook" title="Exemples caméra : valeurs vraies et prédictions CNN" desc="Quatre images du jeu de test" wide notebook />
+        <Card
+          className="image-plate wide group cursor-pointer transition-all hover:border-[#67caff]/60 hover:shadow-[0_0_15px_rgba(103,202,255,0.18)]"
+          noPad
+          role="button"
+          tabIndex={0}
+          title="Cliquer pour agrandir le graphique"
+          onClick={() => openZoom({
+            id: 'occultation-t1', type: 'chart', title: "Prévision d'occultation à t+1",
+            subtitle: 'Deux images prédisent l’occultation à t+1 : MAE test 0,0675, sous la cible de 0,10.',
+            content: <div className="w-full h-full rounded-xl bg-[#eaf0f4]"><OccultationDiagram /></div>
+          })}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              event.stopPropagation();
+              event.currentTarget.click();
+            }
+          }}
+        >
+          <div className="relative w-full bg-[#eaf0f4]" style={{ height: 'clamp(115px, 17vh, 160px)' }}>
+            <OccultationDiagram />
+            <div className="absolute inset-0 bg-[#081528]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-xs text-[#e4efff] font-medium backdrop-blur-[2px]"><Maximize2 size={14} className="text-[#67caff]" /><span>Cliquer pour agrandir</span></div>
+          </div>
+          <div className="image-caption"><span>Prévision d'occultation à t+1</span><small>Deux images prédisent t+1 : MAE test 0,0675, sous la cible de 0,10.</small></div>
         </Card>
       </div>
-      <div className="grid md:grid-cols-2 gap-2 mt-1"><ImagePlate name="jalon2_cnn_vs_regles_notebook" title="CNN ciel vs règles simples" desc="Panneau exact de la figure finale du notebook" wide notebook /><ImagePlate name="jalon2_camera_examples_notebook" title="Exemples caméra : valeurs vraies et prédictions CNN" desc="Figure exacte générée par la cellule finale du notebook" wide notebook /></div>
       <Source paths={[slideSource[1], 'experiments/journal_experiences_jalon2.csv', 'docs/decisions/PAGE_DE_DECISIONS_JALON2.md']} />
     </>;
     case 12: return <>
-      <Heading kicker="04 / EXPÉRIENCES · JALON 02" title="Auto-encodeur : les quatre cibles sont atteintes" desc="Le goulot et le score sont gelés sur la validation ; le test réel n'est ouvert qu'une fois pour le modèle retenu." />
-      <div className="grid lg:grid-cols-2 gap-3 flex-1 min-h-0">
-        <Card className="!flex !flex-col">
-          <h3 className="small-title">Conditions thermiques · test final</h3>
-          <div className="grid grid-cols-2 gap-2 mb-2"><Metric value="0,9859" label="AUC thermique" accent="green" /><Metric value="88,0 %" label="Fissures détectées" accent="green" /><Metric value="4,92 %" label="Fausses alertes test" /><Metric value="0,9739" label="Référence max − médiane" /></div>
+      <Heading kicker="04 / EXPÉRIENCES · JALON 02" title="Auto-encodeur : détecter les défauts thermiques" desc="Objectif : repérer les anomalies des panneaux à partir de l'erreur de reconstruction des images thermiques." />
+      <div className="j2-thermal-layout">
+        <Card className="j2-thermal-card">
+          <h3 className="small-title">1 · Principe et sélection</h3>
+          <div className="j2-ae-flow" aria-label="Image thermique, encodeur, goulot de 32 dimensions, décodeur, image reconstruite">
+            <span>Image<br />thermique</span><ArrowRight size={14} /><span>Encodeur</span><ArrowRight size={14} /><span className="j2-ae-bottleneck">Goulot<br />32 dim</span><ArrowRight size={14} /><span>Décodeur</span><ArrowRight size={14} /><span>Image<br />reconstruite</span>
+          </div>
+          <p className="j2-thermal-copy">Entraîné sur des images saines, le modèle les reconstruit. Une erreur de reconstruction élevée peut signaler un défaut.</p>
+          <h3 className="small-title j2-section-title">Choix du goulot · validation proxy</h3>
+          <Table headers={['Goulot', 'AUC proxy MSE / max', 'Seuil max']} rows={j2Thermal.map(x => [`${x.latent} dim`, `${nf(x.mseAuc, 1)} / ${nf(x.maxAuc, 1)}`, nf(x.maxSeuil, 4)])} emphasis={[1]} />
+          <p className="j2-thermal-copy">Score maximal et seuil <b>0,2442</b> retenus sur validation saine (95e percentile), avant le test final. Compression : <b>60×</b> depuis le tenseur convolutif, <b>30×</b> depuis l'image.</p>
+        </Card>
+        <Card className="j2-thermal-card">
+          <h3 className="small-title">2 · Résultats et cibles · test final</h3>
+          <div className="grid grid-cols-2 gap-2 mb-2"><Metric value="0,9859" label="AUC thermique" accent="green" /><Metric value="88,0 %" label="Fissures détectées" accent="green" /></div>
           <Table headers={['Condition', 'Résultat', 'Cible', 'Statut']} rows={[
             ["AUC thermique", "0,9859", "≥ 0,98", <span className="status-good">Atteinte</span>],
             ["Cellules fissurées", "88,0 % · FA 4,92 %", "≥ 85 % · FA ≤ 5 %", <span className="status-good">Atteinte</span>]
           ]} emphasis={[0, 1]} />
+          <p className="j2-thermal-copy">Fausses alertes observées : <b>4,92 %</b> sur le test. AUC de la référence max − médiane : <b>0,9739</b>.</p>
         </Card>
-        <Card className="!flex !flex-col"><h3 className="small-title">Sélection sans fuite du test</h3><Table headers={['Goulot', 'AUC proxy MSE / max', 'Seuil max']} rows={j2Thermal.map(x => [`${x.latent} dim`, `${nf(x.mseAuc, 1)} / ${nf(x.maxAuc, 1)}`, nf(x.maxSeuil, 4)])} emphasis={[1]} /><Bullets items={[<>Seuil <b>0,2442</b> = 95e percentile de la validation saine.</>, <>Score maximal retenu pour préserver les défauts localisés.</>, <>Compression : <b>60×</b> depuis le tenseur convolutif, <b>30×</b> depuis l'image.</>]} /></Card>
+        <div className="j2-thermal-figure">
+          <ImagePlate name="jalon2_detection_thermique_notebook" title="3 · Détection par type de défaut" desc="Taux de détection par type · test final" hero notebook />
+        </div>
       </div>
-      <div className="mt-1"><ImagePlate name="jalon2_detection_thermique_notebook" title="Détection thermique par type de défaut" desc="Panneau exact de la figure finale du notebook" wide notebook /></div>
       <Source paths={[slideSource[1], 'docs/decisions/PAGE_DE_DECISIONS_JALON2.md']} />
     </>;
     case 13: return <><Heading kicker="04 / EXPÉRIENCES · JALON 03" title="Sur le site B, le zero-shot généralise mieux au test" desc="La validation de mars et le décalage climatique A/B sont montrés avec les sorties exactes des cellules 4 et 6." /><div className="grid lg:grid-cols-[1.15fr_1fr_1fr] gap-3 flex-1 min-h-0"><ImagePlate name="jalon3_cell4_img2" title="Gain par horizon · validation B" desc="Cellule 4 · cinq stratégies de transfert" wide notebook /><Card className="!flex !flex-col"><h3 className="small-title">Test final · avril–juin 2025</h3><Table headers={['Stratégie', 'Gain moyen', 'Décision']} rows={j3Test.map(x => [x.model, pct(x.gain), x.gain >= .27 ? <span className="status-good">Atteinte</span> : <span className="status-bad">Non atteinte</span>])} emphasis={[0]} /><div className="mt-2.5"><Metric value="40,3 %" label="Zero-shot, gain moyen test" accent="green" /></div><p className="explain-text">Le fine-tuning atteint 43,4 % en validation mais 38,4 % en test. Le zero-shot conserve une meilleure généralisation.</p></Card><ImagePlate name="jalon3_cell6_img2" title="Décalage climatique A / B" desc="Cellule 6 · profil journalier et clarté matinale" wide notebook /></div><Source paths={[slideSource[2], 'experiments/journal_experiences_jalon3.csv']} /></>;

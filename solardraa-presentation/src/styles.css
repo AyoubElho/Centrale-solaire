@@ -911,6 +911,82 @@ body {
   font-weight: 750;
 }
 
+/* Jalon 2: separate the method, test results and supporting evidence. */
+.j2-context-note,
+.j2-thermal-copy {
+  color: #abc1da;
+  font-size: clamp(11px, 0.85vw, 13px);
+  line-height: 1.45;
+  margin: 8px 0 0;
+}
+
+.j2-thermal-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.05fr) minmax(0, .9fr);
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  align-items: start;
+}
+
+.j2-thermal-card {
+  min-width: 0;
+}
+
+.j2-section-title {
+  margin-top: 18px;
+}
+
+.j2-ae-flow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  color: #83a7ca;
+}
+
+.j2-ae-flow span {
+  flex: 1;
+  padding: 8px 3px;
+  border: 1px solid #284b72;
+  border-radius: 7px;
+  background: #0d2442;
+  color: #d9eafa;
+  font-size: clamp(9px, .7vw, 11px);
+  font-weight: 650;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.j2-ae-flow svg {
+  flex-shrink: 0;
+}
+
+.j2-ae-flow .j2-ae-bottleneck {
+  border-color: #49c4b1;
+  color: #73d9bb;
+}
+
+.j2-thermal-figure {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .j2-thermal-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .main-scroll:has(.j2-thermal-layout) {
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .j2-thermal-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Chart Card & Image Plate */
 .chart-card {
   height: clamp(200px, 27vh, 275px);
@@ -946,6 +1022,14 @@ body {
   flex: 1;
   width: 100%;
   padding-top: 4px;
+}
+
+.chart-description {
+  flex-shrink: 0;
+  margin: 4px 0 0;
+  color: #a9c2dd;
+  font-size: clamp(10px, 0.78vw, 11px);
+  line-height: 1.35;
 }
 
 .chart-tooltip {
@@ -1039,6 +1123,16 @@ body {
 .image-caption small {
   font-size: clamp(10px, 0.78vw, 11px);
   color: #8eb0cf;
+  line-height: 1.35;
+}
+
+.figure-description {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0 11px 8px;
+  background: #102a48;
+  color: #b9d4e8;
+  font-size: clamp(10px, 0.78vw, 11px);
   line-height: 1.35;
 }
 
