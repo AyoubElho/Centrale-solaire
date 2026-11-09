@@ -6,8 +6,8 @@ export const sections = [
   { id: 'methode', label: 'Méthodologie', en: 'Methodology', start: 3 },
   { id: 'materiel', label: 'Matériel et méthodes', en: 'Materials & methods', start: 5 },
   { id: 'experiences', label: 'Expérimentations', en: 'Experiments', start: 9 },
-  { id: 'comparaison', label: 'Comparaison et constats', en: 'Findings', start: 17 },
-  { id: 'conclusion', label: 'Conclusion', en: 'Conclusion', start: 20 }
+  { id: 'comparaison', label: 'Comparaison et constats', en: 'Findings', start: 20 },
+  { id: 'conclusion', label: 'Conclusion', en: 'Conclusion', start: 23 }
 ] as const;
 
 export const slides = [
@@ -26,8 +26,11 @@ export const slides = [
   ['J2 · Détecter les défauts thermiques', 3],
   ['J3 · Transfert de A vers B', 3],
   ['J3 · Multitâche et adaptation caméra', 3],
-  ['J4 · Comparatif récurrent', 3],
-  ['J4 · Longueur de l’historique', 3],
+  ['J4 · Étape 1 : GRU direct vs MLP', 3],
+  ['J4 · Étape 2 : RNN, LSTM et GRU', 3],
+  ['J4 · Étape 3 : Longueur de l’historique', 3],
+  ['J4 · Étape 4 : Direct vs Seq2Seq', 3],
+  ['J4 · Étape 5 : Test et cibles', 3],
   ['Comparaison · Synthèse des résultats', 4],
   ['Contrats, arbitrages et coûts', 4],
   ['Constats et rigueur expérimentale', 4],
