@@ -390,18 +390,9 @@ Les cartes rappellent les résultats du GRU et leurs cibles, présentés à la s
 
 ---
 
-### slide 23
-Ce slide montre notre démarche de rigueur scientifique et d'honnêteté :
-
-- **Validation et test** : un modèle meilleur en validation ne le reste pas forcément sur de nouvelles données.
-- **Transparence** : nous montrons aussi les limites observées, notamment sur la caméra B et à l'horizon t+1 du GRU.
-- **Traçabilité** : chaque résultat doit être lu avec son modèle, sa métrique et sa partition.
-
----
-
 ## 06 / Conclusion
 
-### slide 24
+### slide 23
 Pour conclure, notre projet Drâa Solaire apporte quatre réussites concrètes pour les centrales solaires :
 
 1. **Prévoir** : le MLP a montré que les nuages et la production récente sont les éléments les plus importants.
@@ -411,7 +402,7 @@ Pour conclure, notre projet Drâa Solaire apporte quatre réussites concrètes p
 
 ---
 
-### slide 25
+### slide 24
 Pour terminer, voici les pistes pour prolonger ce projet :
 
 1. **Pistes d'amélioration** :

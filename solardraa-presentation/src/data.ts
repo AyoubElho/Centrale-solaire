@@ -7,7 +7,7 @@ export const sections = [
   { id: 'materiel', label: 'Matériel et méthodes', en: 'Materials & methods', start: 5 },
   { id: 'experiences', label: 'Expérimentations', en: 'Experiments', start: 9 },
   { id: 'comparaison', label: 'Comparaison et constats', en: 'Findings', start: 20 },
-  { id: 'conclusion', label: 'Conclusion', en: 'Conclusion', start: 23 }
+  { id: 'conclusion', label: 'Conclusion', en: 'Conclusion', start: 22 }
 ] as const;
 
 export const slides = [
@@ -33,7 +33,6 @@ export const slides = [
   ['J4 · Étape 5 : Test et cibles', 3],
   ['Comparaison · Synthèse des résultats', 4],
   ['Contrats, arbitrages et coûts', 4],
-  ['Constats et rigueur expérimentale', 4],
   ['Bilan des quatre jalons', 5],
   ['Perspectives et traçabilité', 5]
 ] as const;
