@@ -920,6 +920,16 @@ body {
   margin: 8px 0 0;
 }
 
+.j2-choice-reasons {
+  margin: 3px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.j2-choice-reasons li::before {
+  content: "– ";
+}
+
 .j2-thermal-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.05fr) minmax(0, .9fr);

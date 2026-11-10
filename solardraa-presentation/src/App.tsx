@@ -250,7 +250,13 @@ function Content({ page }: { page: number }) {
           <p className="j2-thermal-copy">Entraîné sur des images saines, le modèle les reconstruit. Une erreur de reconstruction élevée peut signaler un défaut.</p>
           <h3 className="small-title j2-section-title">Choix du goulot · validation proxy</h3>
           <Table headers={['Goulot', 'AUC proxy MSE / max', 'Seuil max']} rows={j2Thermal.map(x => [`${x.latent} dim`, `${nf(x.mseAuc, 1)} / ${nf(x.maxAuc, 1)}`, nf(x.maxSeuil, 4)])} emphasis={[1]} />
-          <p className="j2-thermal-copy">Score maximal et seuil <b>0,2442</b> retenus sur validation saine (95e percentile), avant le test final. Compression : <b>60×</b> depuis le tenseur convolutif, <b>30×</b> depuis l'image.</p>
+          <div className="j2-thermal-copy"><b>Pourquoi 32 ?</b>
+            <ul className="j2-choice-reasons">
+              <li>Même AUC proxy pour les trois goulots : <b>1,0</b>.</li>
+              <li>32 offre le meilleur compromis entre compression et reconstruction.</li>
+              <li>Compression <b>60×</b> ; seuil sain fixé à <b>0,2442</b>.</li>
+            </ul>
+          </div>
         </Card>
         <Card className="j2-thermal-card">
           <h3 className="small-title">2 · Résultats et cibles · test final</h3>

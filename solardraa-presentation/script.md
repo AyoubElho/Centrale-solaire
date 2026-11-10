@@ -224,8 +224,10 @@ Ici, nous utilisons un **Auto-Encodeur Convolutif (CAE)** pour détecter automat
 
 **1. Sélection sans fuite du test :**
 - Trois goulots (16, 32 et 128) et deux scores (MSE et maximum) sont comparés sur un proxy de validation.
-- Le modèle retenu utilise un goulot de 32 et l'erreur maximale.
-- Le seuil **0,2442** est le 95e percentile des scores de la validation saine.
+- Même AUC proxy pour les trois goulots : **1,0**.
+- Le goulot **32** offre le meilleur compromis entre compression et reconstruction.
+- Il compresse la représentation **60 fois** et limite le risque de reconstruire les anomalies.
+- Le seuil **0,2442** correspond au 95e percentile de la validation saine.
 
 **2. Les résultats sur le test :**
 
@@ -234,7 +236,7 @@ Ici, nous utilisons un **Auto-Encodeur Convolutif (CAE)** pour détecter automat
 - **Méthode de référence : AUC de 0,9739**, avec le score « maximum − médiane ».
 - Les hotspots, diodes et sous-modules sont détectés à **100 %** dans ce test.
 
-« Ce graphique montre que le CNN apprend rapidement : l’erreur diminue fortement pendant les premières époques, puis se stabilise. Les courbes d’entraînement et de validation restent proches, ce qui est encourageant pour la généralisation du modèle. »
+« Ce graphique présente les résultats de l’Auto-Encodeur sur le test final. Les quatre défauts dépassent la cible de 85 %. Son AUC de 0,986, contre 0,974 pour la référence, confirme sa bonne capacité de détection. »
 
 ---
 
