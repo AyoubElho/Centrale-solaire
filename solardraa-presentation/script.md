@@ -80,11 +80,11 @@ Pour réaliser ce travail, nous suivons une méthode en cinq étapes :
 
 **Comment lire le gain** : il est égal à **1 − RMSE du modèle / RMSE de la persistance intelligente**, sur les heures de jour. Un gain de 30 % signifie que l'erreur RMSE est 30 % plus faible que celle de la référence ; un gain négatif signifie que le modèle fait moins bien que cette référence.
 
-**Lecture des trois blocs** :
+Notre système remplit trois rôles complémentaires :
 
-- **Prévision — Série → puissance** : le MLP constitue notre premier modèle de prévision, tandis que les GRU exploitent l'ordre des observations pour mieux représenter l'évolution de la production dans le temps.
-- **Perception — Image → information** : le CNN transforme les images du ciel en informations sur les nuages et l'occultation du soleil. L'auto-encodeur mesure les anomalies thermiques grâce à l'erreur de reconstruction des panneaux.
-- **Généralisation — Site A → Site B** : le modèle appris sur le site A est testé directement sur le site B, puis comparé à l'apprentissage à zéro et aux différentes méthodes de fine-tuning.
+- **Prévision** : utiliser les mesures passées et la météo pour estimer la production des prochaines heures.
+- **Perception** : analyser les images du ciel et des panneaux pour connaître l'état du ciel et repérer les défauts.
+- **Généralisation** : vérifier si un modèle entraîné sur le site A fonctionne aussi sur le site B.
 
 La **persistance intelligente** est uniquement une méthode de référence pour la prévision de puissance : elle prolonge la production actuelle en la corrigeant selon l'évolution théorique de l'ensoleillement. Elle permet de vérifier si nos modèles MLP et GRU apportent réellement une amélioration. Elle n'est pas utilisée pour évaluer directement les tâches de vision, qui emploient plutôt la MAE, l'AUC et le taux de fausses alertes.
 
