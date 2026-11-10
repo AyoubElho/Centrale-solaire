@@ -142,34 +142,7 @@ function Network({ type }: { type: 'mlp' | 'cnn' | 'ae' | 'gru' }) {
   </div>;
 }
 function LearningChart({ data }: { data: { epoch: number, loss: number, val_loss: number }[] }) { return <ResponsiveContainer width="100%" height="100%"><LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -12 }}><CartesianGrid stroke="#233a55" strokeDasharray="3 6" /><XAxis dataKey="epoch" stroke="#7d96b3" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#adc6e2' }} /><YAxis stroke="#7d96b3" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#adc6e2' }} tickFormatter={v => Number(v).toFixed(v < .01 ? 3 : 2)} /><Tooltip content={<ChartTip />} /><Legend iconType="circle" wrapperStyle={{ fontSize: 13, paddingTop: 6, color: '#e5f2ff' }} /><Line name="Loss" type="monotone" dataKey="loss" stroke={C.cyan} dot={false} strokeWidth={3.1} /><Line name="Validation loss" type="monotone" dataKey="val_loss" stroke={C.gold} dot={false} strokeWidth={2.9} /></LineChart></ResponsiveContainer> }
-function OccultationDiagram() {
-  return (
-    <svg viewBox="0 0 440 150" className="w-full h-full" role="img" aria-label="Images du ciel à t−1 et t, CNN paire, occultation prédite à t+1 : MAE test 0,0675, cible 0,10">
-      <rect x="12" y="15" width="98" height="46" rx="8" fill="#d6e9f7" stroke="#83b9dc" />
-      <text x="61" y="34" textAnchor="middle" fontSize="12" fontWeight="700" fill="#183a5b">Images du ciel</text>
-      <text x="61" y="51" textAnchor="middle" fontSize="13" fill="#183a5b">t−1 et t</text>
-      <path d="M115 38h25m-7-6 7 6-7 6" fill="none" stroke="#66839d" strokeWidth="2" />
-      <rect x="147" y="15" width="100" height="46" rx="8" fill="#d4e7fc" stroke="#81ade8" />
-      <text x="197" y="35" textAnchor="middle" fontSize="13" fontWeight="700" fill="#174484">CNN paire</text>
-      <text x="197" y="51" textAnchor="middle" fontSize="11" fill="#174484">prévision</text>
-      <path d="M252 38h25m-7-6 7 6-7 6" fill="none" stroke="#66839d" strokeWidth="2" />
-      <rect x="284" y="15" width="144" height="46" rx="8" fill="#d6f2e7" stroke="#72c8a3" />
-      <text x="356" y="34" textAnchor="middle" fontSize="12" fontWeight="700" fill="#126242">Occultation</text>
-      <text x="356" y="51" textAnchor="middle" fontSize="13" fill="#126242">prédite à t+1</text>
-      <text x="20" y="84" fontSize="12" fontWeight="700" fill="#183a5b">MAE test : 0,0675</text>
-      <text x="420" y="84" textAnchor="end" fontSize="12" fontWeight="700" fill="#183a5b">Cible : ≤ 0,10</text>
-      <rect x="20" y="95" width="400" height="13" rx="6.5" fill="#ccdce8" />
-      <rect x="20" y="95" width="270" height="13" rx="6.5" fill="#249d72" />
-      <path d="M290 91v21" stroke="#126242" strokeWidth="2" />
-      <path d="M420 90v23" stroke="#e59a28" strokeWidth="2" />
-      <text x="20" y="130" fontSize="11" fill="#43617a">0</text>
-      <text x="290" y="130" textAnchor="middle" fontSize="11" fill="#126242">0,0675</text>
-      <text x="420" y="130" textAnchor="end" fontSize="11" fill="#86560c">0,10</text>
-    </svg>
-  );
-}
 function Content({ page }: { page: number }) {
-  const { openZoom } = useZoomModal();
   switch (page) {
     case 0: return <div className="cover-slide">
       <div className="cover-copy"><div className="overline"><span className="tiny-sun" /> MASTER SDIA · ÉTUDE DE CAS 04</div><h1>Prévoir l'énergie.<br /><span>Comprendre le ciel.</span></h1><p className="cover-lead">Prévision multi-horizons, perception visuelle et transfert d'apprentissage pour une centrale solaire intelligente.</p><div className="cover-pills"><Chip accent>Drâa Solaire</Chip><Chip>Groupe 14</Chip><Chip>Étude scientifique</Chip><Chip>2026 / 2027</Chip></div><div className="cover-line" /><div className="cover-foot"><div><small>CAS D'ÉTUDE</small><strong>Drâa Solaire · Site A</strong></div><div><small>PARCOURS</small><strong>Master SDIA</strong></div><div><small>DOMAINE</small><strong>IA avancée</strong></div></div><div className="cover-team"><div className="cover-team-row"><span className="cover-team-label">RÉALISÉ PAR · GROUPE 14</span><div className="cover-team-members"><div className="cover-team-member">Oussama <strong>FELOUACH</strong></div><div className="cover-team-member">Ayoub <strong>EL HOUANI</strong></div><div className="cover-team-member">Mbarek <strong>ETTALEBY</strong></div></div></div><div className="cover-prof"><span>ENCADRÉ PAR :</span><strong>Pr. Soufiane HAMIDA</strong></div></div></div>
@@ -208,34 +181,9 @@ function Content({ page }: { page: number }) {
           </Card>
         </div>
       </div>
-      <div className="grid md:grid-cols-3 gap-2 mt-1">
+      <div className="grid md:grid-cols-2 gap-2 mt-1">
         <ImagePlate name="jalon2_cnn_vs_regles_notebook" title="CNN ciel vs règles simples" desc="MAE de l'image courante · test final" wide notebook />
         <ImagePlate name="jalon2_camera_examples_notebook" title="Exemples caméra : valeurs vraies et prédictions CNN" desc="Quatre images du jeu de test" wide notebook />
-        <Card
-          className="image-plate wide group cursor-pointer transition-all hover:border-[#67caff]/60 hover:shadow-[0_0_15px_rgba(103,202,255,0.18)]"
-          noPad
-          role="button"
-          tabIndex={0}
-          title="Cliquer pour agrandir le graphique"
-          onClick={() => openZoom({
-            id: 'occultation-t1', type: 'chart', title: "Prévision d'occultation à t+1",
-            subtitle: 'Deux images prédisent l’occultation à t+1 : MAE test 0,0675, sous la cible de 0,10.',
-            content: <div className="w-full h-full rounded-xl bg-[#eaf0f4]"><OccultationDiagram /></div>
-          })}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              event.stopPropagation();
-              event.currentTarget.click();
-            }
-          }}
-        >
-          <div className="relative w-full bg-[#eaf0f4]" style={{ height: 'clamp(115px, 17vh, 160px)' }}>
-            <OccultationDiagram />
-            <div className="absolute inset-0 bg-[#081528]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-xs text-[#e4efff] font-medium backdrop-blur-[2px]"><Maximize2 size={14} className="text-[#67caff]" /><span>Cliquer pour agrandir</span></div>
-          </div>
-          <div className="image-caption"><span>Prévision d'occultation à t+1</span><small>Deux images prédisent t+1 : MAE test 0,0675, sous la cible de 0,10.</small></div>
-        </Card>
       </div>
       <Source paths={[slideSource[1], 'experiments/journal_experiences_jalon2.csv', 'docs/decisions/PAGE_DE_DECISIONS_JALON2.md']} />
     </>;
