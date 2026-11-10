@@ -202,7 +202,7 @@ function Content({ page }: { page: number }) {
             <ul className="j2-choice-reasons">
               <li>Même AUC proxy pour les trois goulots : <b>1,0</b>.</li>
               <li>32 offre le meilleur compromis entre compression et reconstruction.</li>
-              <li>Compression <b>60×</b> ; seuil sain fixé à <b>0,2442</b>.</li>
+              <li>Seuil sain fixé à <b>0,2442</b>.</li>
             </ul>
           </div>
         </Card>
