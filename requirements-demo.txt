@@ -1,5 +1,6 @@
-streamlit>=1.36
+streamlit>=1.66
 tensorflow>=2.16
 numpy
 pandas
 pillow
+matplotlib>=3.8

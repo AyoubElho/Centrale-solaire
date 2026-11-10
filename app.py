@@ -21,12 +21,17 @@ from utils.data_loader import (
     H,
     infer_sky_image,
     infer_thermal_image,
+    load_autoencoder_model,
+    load_cnn_ciel_model,
     load_site_data,
+    load_thermal_threshold,
+    prepare_mlp_47_inputs,
     prepare_simulation_inputs,
 )
 
 ROOT = Path(__file__).resolve().parent
 MODELS_DIR = ROOT / "models"
+FIGURES_DIR = ROOT / "docs" / "figures"
 
 def find_data_file(filename: str) -> Path:
     candidates = [
@@ -85,6 +90,50 @@ def hero(title: str, description: str, badge: str = "Modèles sauvegardés · In
 
 def card(label: str, value: str) -> None:
     st.markdown(f'<div class="info-card"><strong>{label}</strong><br>{value}</div>', unsafe_allow_html=True)
+
+
+def explain_jalon(objective: str, method: str, finding: str, limit: str) -> None:
+    """Four short prompts that give each jalon the same presentation structure."""
+    left, right = st.columns(2)
+    with left:
+        card("Objectif", objective)
+        st.write("")
+        card("Méthode", method)
+    with right:
+        card("Résultat principal · test final", finding)
+        st.write("")
+        card("Point de vigilance", limit)
+
+
+def notebook_figure(filename: str, caption: str) -> None:
+    """Display a figure exported from the executed notebook, if present."""
+    path = FIGURES_DIR / filename
+    if path.is_file():
+        st.image(str(path), caption=caption, width="stretch")
+    else:
+        st.warning(f"Figure absente : docs/figures/{filename}")
+
+
+def show_overview() -> None:
+    hero(
+        "Quatre jalons, une centrale solaire",
+        "De la prévision sur le site A à la vision, au transfert vers le site B et aux modèles séquentiels.",
+        "Parcours de présentation · résultats issus des notebooks exécutés",
+    )
+    st.subheader("Le parcours en un coup d'œil")
+    overview = [
+        ("01 · Prévoir", "MLP et 47 variables", "Site A · gain moyen test : 50,9 %"),
+        ("02 · Observer", "CNN du ciel et auto-encodeur", "Test · AUC thermique : 0,9859"),
+        ("03 · Transférer", "Modèle A appliqué au site B", "Site B · gain zero-shot test : 40,3 %"),
+        ("04 · Modéliser le temps", "RNN, LSTM et GRU", "Site A · gain moyen GRU test : 49,0 %"),
+    ]
+    columns = st.columns(4)
+    for column, (title, method, result) in zip(columns, overview):
+        with column:
+            card(title, f"{method}<br><small>{result}</small>")
+    st.write("")
+    st.info("Les métriques correspondent à des tâches et à des tests différents. Ouvrez chaque jalon pour voir son objectif, son protocole, ses résultats et ses limites.")
+    st.caption("Sources : notebooks/jalon1_prevoir_production_mlp.ipynb, notebooks/uc4_jalon2.ipynb, notebooks/uc4_jalon3.ipynb et notebooks/uc4_jalon4.ipynb.")
 
 
 @st.cache_resource(show_spinner="Chargement du modèle de prévision…")
@@ -157,13 +206,32 @@ def forecast_from_dataset(model_filename: str, site: str, index: int, title: str
     st.line_chart(result.set_index("Horizon")[["Prédiction (MW)", "Réel (MW)", "Persistance intelligente (MW)"]],
                   color=["#F7B733", "#8CD7E8", "#7F9AB2"])
     with st.expander("Voir le détail des six horizons", expanded=False):
-        st.dataframe(result, hide_index=True, use_container_width=True)
+        st.dataframe(result, hide_index=True, width="stretch")
 
 
 def show_jalon_1() -> None:
-    hero("Prévision solaire à 6 heures", "Un MLP transforme 47 variables météo, calendaires et historiques en une trajectoire de production exploitable.")
+    hero("Jalon 1 · Prévoir sur le site A", "Un MLP transforme 47 variables historiques, météorologiques et calendaires en six prévisions horaires.")
+    explain_jalon(
+        "Prévoir la production du site A de t+1 à t+6 heures et battre la persistance intelligente.",
+        "24 heures de production, 18 valeurs météo futures, 4 variables calendaires et le nettoyage alimentent le MLP.",
+        "Gain moyen de 50,9 % sur le test 2025, au-dessus de la cible de 30 %.",
+        "Le gain à t+1 est de 10,2 % sur le test, sous la cible de 12 %.",
+    )
+    st.subheader("Résultats du notebook")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Gain moyen · test A", "50,9 %")
+    c2.metric("Gain t+1 · test A", "10,2 %")
+    c3.metric("Taille du modèle", "0,09 Mo")
+    st.caption("Cibles : gain moyen ≥ 30 % ; gain à t+1 ≥ 12 % ; taille ≤ 5 Mo.")
+    fig_left, fig_right = st.columns(2)
+    with fig_left:
+        notebook_figure("jalon1_prevoir_production_mlp_cell11_img0.png", "Erreur à t+1 selon l'heure · validation du site A.")
+    with fig_right:
+        notebook_figure("jalon1_prevoir_production_mlp_cell16_img1.png", "Erreur à t+1 par mois · test 2025 du site A.")
+    st.subheader("Explorer une prévision sur le test")
+    st.caption("Cette prévision locale illustre un instant précis ; les gains ci-dessus sont calculés sur tout le jeu de test.")
     df = load_site_data("A")
-    valid = range(23, len(df) - H)
+    valid = [int(i) for i in np.flatnonzero((df["horodatage"] >= pd.Timestamp("2025-01-01")).to_numpy()) if 23 <= i < len(df) - H]
     example = st.selectbox(
         "Exemple de test (site A)", valid, index=min(1000, len(valid) - 1),
         format_func=lambda i: date_label(df, i), key="j1_example",
@@ -199,26 +267,60 @@ def show_jalon_1() -> None:
     col3.metric("Variables d’entrée", "47")
     st.line_chart(pd.DataFrame({"MLP (MW)": pred, "Réel (MW)": real}, index=[f"t+{i} h" for i in range(1, H + 1)]), color=["#F7B733", "#8CD7E8"])
     st.caption("Prétraitement identique au notebook : 24 historiques + 18 prévisions météo + 4 variables calendaires + nettoyage.")
+    st.caption("Source : notebooks/jalon1_prevoir_production_mlp.ipynb.")
 
 
 def show_jalon_2() -> None:
-    hero("Voir le ciel. Diagnostiquer les panneaux.", "Deux modèles de vision transforment les images en indicateurs immédiatement compréhensibles pour l’exploitation.")
+    hero("Jalon 2 · Voir le ciel et les panneaux", "Un CNN extrait l'état du ciel ; un auto-encodeur apprend à reconstruire les thermographies saines pour signaler les défauts.")
+    explain_jalon(
+        "Améliorer la prévision grâce aux images du ciel et détecter les anomalies thermiques des panneaux.",
+        "CNN ciel, MLP enrichi et CNN sur la paire d'images (t−1, t) ; auto-encodeur thermique à goulot 32.",
+        "Les quatre cibles du jalon 2 sont atteintes sur le test final.",
+        "Sur l'image courante, la règle simple reste meilleure pour la couverture (MAE 0,0166 contre 0,0252 pour le CNN).",
+    )
+    st.subheader("Quatre cibles vérifiées sur le test final")
+    st.dataframe(pd.DataFrame([
+        {"Exigence": "Gain site A à t+1", "Résultat": "16,80 %", "Cible": "≥ 12 %", "Statut": "Atteinte"},
+        {"Exigence": "MAE occultation à t+1", "Résultat": "0,0675", "Cible": "≤ 0,10", "Statut": "Atteinte"},
+        {"Exigence": "AUC thermique", "Résultat": "0,9859", "Cible": "≥ 0,98", "Statut": "Atteinte"},
+        {"Exigence": "Fissures à ≤ 5 % de fausses alertes", "Résultat": "88 % · FA 4,92 %", "Cible": "≥ 85 %", "Statut": "Atteinte"},
+    ]), hide_index=True, width="stretch")
+    st.caption("La MAE 0,0388 mesure l'occultation de l'image courante ; 0,0675 mesure la prévision à t+1. Les deux tâches sont distinctes.")
+    fig_left, fig_right = st.columns(2)
+    with fig_left:
+        notebook_figure("jalon2_cnn_vs_regles_notebook.png", "CNN vs règles simples sur le test : le CNN réduit surtout l'erreur d'occultation.")
+    with fig_right:
+        notebook_figure("jalon2_detection_thermique_notebook.png", "Détection thermique sur le test : 88 % des fissures détectées.")
+    st.subheader("Explorer les images de test")
+    st.caption("Les exemples ci-dessous utilisent les modèles sauvegardés ; les scores globaux ci-dessus proviennent des notebooks exécutés.")
+    if load_cnn_ciel_model() is None or load_autoencoder_model() is None:
+        st.warning("Les modèles de vision sauvegardés ne peuvent pas être chargés ici. Les résultats et figures des notebooks restent consultables ci-dessus.")
+        return
+    saved_thermal_threshold = load_thermal_threshold()
+    if saved_thermal_threshold is not None and abs(saved_thermal_threshold - 0.2442) > 0.001:
+        st.info(
+            f"Démo thermique : le seuil recalibré du modèle exporté est {saved_thermal_threshold:.4f}, "
+            "contre 0,2442 dans le notebook final. Les prédictions locales illustrent le fichier exporté ; "
+            "les métriques de test ci-dessus restent celles du notebook."
+        )
     tab_sky, tab_thermal = st.tabs(["Image du ciel", "Thermographie panneau"])
     with tab_sky:
-        data = np.load(find_data_file("uc4_ciel_A.npz"))
-        n_samples = len(data["X"])
+        sky_data = np.load(find_data_file("uc4_ciel_A.npz"))
+        site_a = load_site_data("A")
+        image_times = site_a["horodatage"].iloc[sky_data["heure"].astype(int)].reset_index(drop=True)
+        test_samples = np.flatnonzero((image_times >= pd.Timestamp("2025-01-01")).to_numpy()).tolist()
         sample = st.selectbox(
             "Exemple de test ciel",
-            range(n_samples),
+            test_samples,
             index=0,
-            format_func=lambda i: f"Échantillon #{i} — {int(data['heure'][i]):02d}:00 (Couv. réelle: {float(data['couverture'][i]):.1%}, Occultation: {float(data['occultation'][i]):.1%})",
+            format_func=lambda i: f"{image_times.iloc[i]:%d/%m/%Y %H:%M} · image #{i} (couv. {float(sky_data['couverture'][i]):.1%}, occ. {float(sky_data['occultation'][i]):.1%})",
             key="sky_sample",
         )
-        image = Image.fromarray(data["X"][sample].astype(np.uint8))
+        image = Image.fromarray(sky_data["X"][sample].astype(np.uint8))
         arr, cover, occultation = infer_sky_image(image)
-        real_cover = float(data["couverture"][sample])
-        real_occ = float(data["occultation"][sample])
-        hour = int(data["heure"][sample])
+        real_cover = float(sky_data["couverture"][sample])
+        real_occ = float(sky_data["occultation"][sample])
+        image_time = image_times.iloc[sample]
 
         col1, col2, col3 = st.columns([1.4, 1, 1])
         with col1:
@@ -226,7 +328,7 @@ def show_jalon_2() -> None:
             fig.patch.set_facecolor("#0b1e2d")
             ax.set_facecolor("#0b1e2d")
             im = ax.imshow(arr, cmap="Blues_r", vmin=0.0, vmax=1.0)
-            ax.set_title(f"Image Ciel (32×32) · {hour:02d}:00", color="#f8c65a", fontsize=11, fontweight="bold", pad=8)
+            ax.set_title(f"Image Ciel (32×32) · {image_time:%d/%m/%Y %H:%M}", color="#f8c65a", fontsize=11, fontweight="bold", pad=8)
             ax.tick_params(colors="#8eb5c9", labelsize=8)
             for spine in ax.spines.values():
                 spine.set_color("#24445a")
@@ -234,7 +336,7 @@ def show_jalon_2() -> None:
             cbar.ax.tick_params(colors="#8eb5c9", labelsize=8)
             cbar.set_label("Intensité normalisée [0, 1]", color="#8eb5c9", fontsize=8)
             fig.tight_layout()
-            st.pyplot(fig, use_container_width=True)
+            st.pyplot(fig, width="stretch")
             plt.close(fig)
 
         with col2:
@@ -246,11 +348,11 @@ def show_jalon_2() -> None:
 
         card(
             "Lecture du modèle CNN Ciel",
-            f"Image 32×32 pixels · Prétraitement [0, 1] · Dual-Pooling (Moyenne + Max) · Échantillon #{sample} capturé à {hour:02d}:00.",
+            f"Image 32×32 pixels · Prétraitement [0, 1] · Dual-Pooling (Moyenne + Max) · Échantillon #{sample} du {image_time:%d/%m/%Y %H:%M}.",
         )
 
     with tab_thermal:
-        data = np.load(find_data_file("uc4_thermographie.npz"))
+        thermal_data = np.load(find_data_file("uc4_thermographie.npz"))
         def_names = {
             0: "Panneau sain",
             1: "D1 : Point chaud (Hotspot)",
@@ -264,18 +366,18 @@ def show_jalon_2() -> None:
             "• **#0** (Sain) • **#19** (Hotspot D1) • **#1** (Fissure D2) • **#13** (Diodes D3) • **#15** (Sous-module D4)"
         )
         def label_thermal_sample(i: int) -> str:
-            d_val = int(data["defaut_test"][i])
+            d_val = int(thermal_data["defaut_test"][i])
             return f"Échantillon #{i} — {def_names.get(d_val, f'Défaut {d_val}')}"
 
         sample = st.selectbox(
             "Exemple de test thermique",
-            range(len(data["X_test"])),
+            range(len(thermal_data["X_test"])),
             index=0,
             format_func=label_thermal_sample,
             key="thermal_sample",
         )
-        original, reconstruction, diff, mse, max_error, anomaly, threshold = infer_thermal_image(data["X_test"][sample])
-        defaut_reel = int(data["defaut_test"][sample])
+        original, reconstruction, diff, mse, max_error, anomaly, score, threshold = infer_thermal_image(thermal_data["X_test"][sample])
+        defaut_reel = int(thermal_data["defaut_test"][sample])
 
         # Échelle de température commune pour comparaison directe
         t_min = min(float(np.min(original)), float(np.min(reconstruction)))
@@ -295,7 +397,7 @@ def show_jalon_2() -> None:
             cb1.ax.tick_params(colors="#8eb5c9", labelsize=8)
             cb1.set_label("Température (°C)", color="#8eb5c9", fontsize=8)
             fig1.tight_layout()
-            st.pyplot(fig1, use_container_width=True)
+            st.pyplot(fig1, width="stretch")
             plt.close(fig1)
 
         with c2:
@@ -311,14 +413,14 @@ def show_jalon_2() -> None:
             cb2.ax.tick_params(colors="#8eb5c9", labelsize=8)
             cb2.set_label("Température (°C)", color="#8eb5c9", fontsize=8)
             fig2.tight_layout()
-            st.pyplot(fig2, use_container_width=True)
+            st.pyplot(fig2, width="stretch")
             plt.close(fig2)
 
         with c3:
             fig3, ax3 = plt.subplots(figsize=(4.2, 3.2), dpi=120)
             fig3.patch.set_facecolor("#0b1e2d")
             ax3.set_facecolor("#0b1e2d")
-            vmax_diff = max(float(np.max(diff)), threshold * 1.2, 2.5)
+            vmax_diff = max(float(np.max(diff)), 2.5)
             im3 = ax3.imshow(diff, cmap="hot", vmin=0.0, vmax=vmax_diff, aspect="auto")
             ax3.set_title("Erreur absolue |M - R| (°C)", color="#f8c65a", fontsize=11, fontweight="bold", pad=8)
             ax3.tick_params(colors="#8eb5c9", labelsize=8)
@@ -328,7 +430,7 @@ def show_jalon_2() -> None:
             cb3.ax.tick_params(colors="#8eb5c9", labelsize=8)
             cb3.set_label("Écart (°C)", color="#8eb5c9", fontsize=8)
             fig3.tight_layout()
-            st.pyplot(fig3, use_container_width=True)
+            st.pyplot(fig3, width="stretch")
             plt.close(fig3)
 
         verdict, emoji = ("Anomalie détectée", "⚠️") if anomaly else ("Panneau sain", "✓")
@@ -338,31 +440,109 @@ def show_jalon_2() -> None:
         st.markdown(
             f"<div class='info-card' style='border-left: 4px solid {status_color};'>"
             f"<strong>{emoji} Diagnostic IA : {verdict}</strong> — Vérité terrain : <strong>{etat_reel}</strong><br>"
-            f"Décision basée sur l'écart thermique maximal : <strong>{max_error:.2f}°C</strong> (Seuil d'alerte à 95% = <strong>{threshold:.2f}°C</strong>)."
+            f"Score d'anomalie : <strong>{score:.4f}</strong> (seuil de validation saine : <strong>{threshold:.4f}</strong>)."
             f"</div>",
             unsafe_allow_html=True,
         )
-        st.caption(f"MSE résiduelle = {mse:.4f} °C² · Écart thermique max = {max_error:.3f} °C · Seuil d'alerte calibré = {threshold:.3f} °C · Matrice 24×40 capteurs.")
+        st.caption(f"MSE résiduelle = {mse:.4f} °C² · Écart thermique maximal = {max_error:.3f} °C · Score = maximum de l'erreur quadratique normalisée · Seuil = 95e percentile de la validation saine · Matrice 24×40 capteurs.")
+    st.caption("Source des résultats globaux : notebooks/uc4_jalon2.ipynb.")
 
 
 def show_jalon_3() -> None:
-    hero("Un nouveau site, une prédiction immédiate", "Évaluation zero-shot sur la centrale B : le modèle est appliqué sans réentraînement pour mesurer sa capacité de transfert.", "Zero-shot · Site B · Modèle chargé")
-    df = load_site_data("B")
-    valid = range(48, len(df) - H)
-    example = st.selectbox("Exemple de test (site B)", valid, index=min(100, len(valid) - 1),
-                           format_func=lambda i: date_label(df, i), key="j3_example")
-    forecast_from_dataset("modele_recurrent_solaire_jalon4.keras", "B", example, "Prévision transférée")
-    st.info("Pour une démonstration strictement Jalon 3, sauvegardez aussi le MLP de transfert sous `models/modele_solaire_jalon3.keras` et remplacez le nom de fichier ci-dessus.")
+    hero("Jalon 3 · Transférer vers le site B", "Le site B dispose de peu d'historique local : cinq stratégies de transfert sont comparées, puis évaluées sur avril–juin 2025.")
+    explain_jalon(
+        "Prévoir la production sur le site B et adapter l'analyse de sa caméra du ciel.",
+        "Comparer le MLP A appliqué tel quel, un apprentissage sur B, un ajustement complet et deux niveaux de couches gelées.",
+        "Le zero-shot atteint 40,3 % de gain moyen sur le test B et dépasse la cible de 27 %.",
+        "La caméra B reste difficile : MAE d'occultation 0,1534 sur le test, au-dessus de la cible 0,10.",
+    )
+    st.subheader("Stratégies de prévision · test B, avril–juin 2025")
+    st.dataframe(pd.DataFrame([
+        {"Stratégie": "Modèle A tel quel · zero-shot", "Gain moyen": "40,3 %", "Cible": "≥ 27 %", "Statut": "Atteinte"},
+        {"Stratégie": "Entraînement sur B seul", "Gain moyen": "25,6 %", "Cible": "≥ 27 %", "Statut": "Non atteinte"},
+        {"Stratégie": "Ajustement fin complet", "Gain moyen": "38,4 %", "Cible": "≥ 27 %", "Statut": "Atteinte"},
+    ]), hide_index=True, width="stretch")
+    st.caption("En validation de mars, l'ajustement complet atteint 43,4 %. Sur le test d'avril–juin, le zero-shot généralise mieux.")
+    fig_left, fig_right = st.columns(2)
+    with fig_left:
+        notebook_figure("jalon3_cell4_img2.png", "Gain par horizon des cinq stratégies · validation du site B.")
+    with fig_right:
+        notebook_figure("jalon3_cell6_img2.png", "Différences de profil solaire et de clarté matinale entre les sites A et B.")
+    with st.expander("Voir l'adaptation de la caméra B"):
+        notebook_figure("jalon3_cell10_img2.png", "Valeurs vraies et prédictions après adaptation de la caméra B.")
+        st.warning("Occultation sur le test B : MAE 0,1534 > 0,10. Cette cible n'est pas atteinte.")
+    st.subheader("Tester le transfert sur le site B")
+    st.caption("Le MLP a été entraîné sur le site A puis appliqué au site B sans ajustement. Choisissez un instant du test d'avril à juin 2025.")
+    model = load_forecast_model("modele_zero_shot_jalon3.keras")
+    if model is None:
+        st.warning("Le modèle Jalon 3 est absent. Exécutez `.venv/bin/python -m scripts.export_jalon3_model` pour le créer.")
+    else:
+        site_b = load_site_data("B")
+        test_times = site_b["horodatage"]
+        candidates = np.flatnonzero((test_times >= pd.Timestamp("2025-04-01")).to_numpy())
+        valid = [int(i) for i in candidates if 23 <= i < len(site_b) - H and site_b["jour"].iloc[i + 1:i + 1 + H].any()]
+        if not valid:
+            st.warning("Aucun instant de test diurne du site B n'est disponible.")
+        else:
+            default = next((pos for pos, i in enumerate(valid) if test_times.iloc[i].hour == 10), 0)
+            example = st.selectbox("Instant de prévision · site B", valid, index=default,
+                                   format_func=lambda i: date_label(site_b, i), key="j3_example")
+            x = prepare_mlp_47_inputs(site_b, "B", [example])
+            prediction = np.clip(np.asarray(model.predict(x, verbose=0)).reshape(-1), 0, 1) * CAPACITE["B"]
+            future = np.arange(example + 1, example + 1 + H)
+            actual = site_b["production"].to_numpy()[future]
+            ghi_cs = site_b["ghi_cs"].to_numpy()
+            ratio = site_b.iloc[example]["production"] / ghi_cs[example] if ghi_cs[example] > 10 else 0.0
+            baseline = np.clip(ratio * ghi_cs[future], 0, CAPACITE["B"])
+            result = pd.DataFrame({
+                "Horizon": [f"t+{h} h" for h in range(1, H + 1)],
+                "Date": test_times.iloc[future].to_numpy(),
+                "MLP A → B (MW)": prediction.round(2),
+                "Réel (MW)": actual.round(2),
+                "Persistance intelligente (MW)": baseline.round(2),
+            })
+            c1, c2, c3 = st.columns(3)
+            c1.metric("MAE · modèle", f"{np.mean(np.abs(prediction - actual)):.2f} MW")
+            c2.metric("MAE · persistance", f"{np.mean(np.abs(baseline - actual)):.2f} MW")
+            c3.metric("Puissance du site B", "20 MW")
+            st.line_chart(result.set_index("Horizon")[["MLP A → B (MW)", "Réel (MW)", "Persistance intelligente (MW)"]],
+                          color=["#F7B733", "#8CD7E8", "#7F9AB2"])
+            with st.expander("Voir les six prévisions", expanded=False):
+                st.dataframe(result, hide_index=True, width="stretch")
+            st.caption("Cet exemple couvre six heures et ne représente pas le gain moyen du test. Le modèle exporté a obtenu 40,6 % sur tout le test B lors de sa réexécution, contre 40,3 % pour l'exécution du notebook.")
+    st.caption("Source des résultats du tableau et des figures : notebooks/uc4_jalon3.ipynb.")
 
 
 def show_jalon_4() -> None:
-    hero("La production comme une séquence", "Le GRU relie les 48 dernières heures au contexte météo des 6 prochaines pour anticiper la courbe de production.", "GRU direct · Horizon 6 h · Déployé")
+    hero("Jalon 4 · Prévoir avec une séquence", "Le GRU exploite 48 heures ordonnées et la météo des six prochaines heures pour prévoir la production sur les sites A et B.", "GRU direct · six horizons")
+    explain_jalon(
+        "Tester si l'ordre temporel améliore la prévision par rapport au MLP tabulaire.",
+        "Comparer SimpleRNN, LSTM, GRU direct et encodeur-décodeur ; étudier 6, 24, 48 et 168 heures d'historique.",
+        "GRU direct 48 h : gain moyen test 49,0 % sur A et 40,0 % sur B en zero-shot.",
+        "Sur le test A, le gain à t+1 est de 9,5 %, sous la cible de 12 %.",
+    )
+    st.subheader("Bilan du modèle retenu · test final")
+    st.dataframe(pd.DataFrame([
+        {"Exigence": "Site A · gain à t+1", "Résultat": "9,5 %", "Cible": "≥ 12 %", "Statut": "Non atteinte"},
+        {"Exigence": "Site A · gain moyen 6 h", "Résultat": "49,0 %", "Cible": "≥ 30 %", "Statut": "Atteinte"},
+        {"Exigence": "Site B · gain moyen zero-shot", "Résultat": "40,0 %", "Cible": "≥ 27 %", "Statut": "Atteinte"},
+        {"Exigence": "Taille du modèle", "Résultat": "0,106 Mo", "Cible": "≤ 5 Mo", "Statut": "Conforme"},
+    ]), hide_index=True, width="stretch")
+    fig_left, fig_right = st.columns(2)
+    with fig_left:
+        notebook_figure("jalon4_cell6_img1.png", "Comparaison SimpleRNN, LSTM et GRU à budget de paramètres proche · validation A.")
+    with fig_right:
+        notebook_figure("jalon4_cell14_img1.png", "Bilan final des cibles sur les tests des sites A et B.")
+    st.subheader("Explorer le GRU sauvegardé")
+    st.caption("La courbe suivante montre un exemple individuel, pas le gain moyen du notebook.")
     site = st.radio("Site", ["A", "B"], horizontal=True)
     df = load_site_data(site)
-    valid = range(48, len(df) - H)
+    test_start = pd.Timestamp("2025-01-01" if site == "A" else "2025-04-01")
+    valid = [int(i) for i in np.flatnonzero((df["horodatage"] >= test_start).to_numpy()) if 48 <= i < len(df) - H]
     example = st.selectbox("Exemple de test", valid, index=min(1000, len(valid) - 1),
                            format_func=lambda i: date_label(df, i), key="j4_example")
     forecast_from_dataset("modele_recurrent_solaire_jalon4.keras", site, example, "Prévision des six prochaines heures")
+    st.caption("Source des résultats globaux : notebooks/uc4_jalon4.ipynb.")
 
 
 apply_design()
@@ -370,12 +550,13 @@ with st.sidebar:
     st.markdown(f"## ☀️ {CENTRAL_NAME}")
     st.caption("Plateforme IA · UC4")
     st.markdown("---")
-    jalon = st.radio("Explorer un jalon", ["Jalon 1 · MLP", "Jalon 2 · Vision", "Jalon 3 · Transfert", "Jalon 4 · GRU"])
+    jalon = st.radio("Explorer", ["Vue d'ensemble", "Jalon 1 · MLP", "Jalon 2 · Vision", "Jalon 3 · Transfert", "Jalon 4 · GRU"])
     st.markdown("---")
-    st.success("Modèles locaux chargés")
-    st.caption("Choisissez un exemple réel ; aucune prédiction n’est simulée.")
+    st.caption("Résultats et figures issus des notebooks exécutés ; démonstrations locales sur les modèles sauvegardés.")
     st.markdown("<div class='info-card'><strong>4 jalons</strong><br>Prévision · Vision · Transfert · Séquence</div>", unsafe_allow_html=True)
-if jalon.startswith("Jalon 1"):
+if jalon == "Vue d'ensemble":
+    show_overview()
+elif jalon.startswith("Jalon 1"):
     show_jalon_1()
 elif jalon.startswith("Jalon 2"):
     show_jalon_2()

@@ -54,6 +54,33 @@ def load_site_data(site="A"):
     df["jour"] = df["hauteur_soleil"].values > 0
     return df
 
+
+def prepare_mlp_47_inputs(df, site, indices):
+    """Entrées du MLP Jalon 3 : 24 productions, 18 prévisions, calendrier, nettoyage."""
+    indices = np.atleast_1d(np.asarray(indices, dtype=int))
+    if indices.size == 0 or indices.min() < 23 or indices.max() + H >= len(df):
+        raise ValueError("Chaque instant doit avoir 24 h d'historique et 6 h de futur.")
+
+    future = indices[:, None] + np.arange(1, H + 1)
+    history = indices[:, None] - np.arange(23, -1, -1)
+    dates = pd.to_datetime(df["horodatage"])
+    hour = dates.dt.hour.to_numpy()[indices]
+    day_of_year = dates.dt.dayofyear.to_numpy()[indices]
+    calendar = np.column_stack((
+        np.sin(2 * np.pi * hour / 24), np.cos(2 * np.pi * hour / 24),
+        np.sin(2 * np.pi * day_of_year / 365.25),
+        np.cos(2 * np.pi * day_of_year / 365.25),
+    ))
+    production = df["production"].to_numpy() / CAPACITE[site]
+    return np.column_stack((
+        production[history],
+        df["ghi_cs"].to_numpy()[future] / 1000.0,
+        df["nebulosite_prevue"].to_numpy()[future],
+        df["temperature_prevue"].to_numpy()[future] / 40.0,
+        calendar,
+        (df["jours_depuis_nettoyage"].to_numpy()[indices] / 30.0)[:, None],
+    )).astype(np.float32)
+
 @lru_cache(maxsize=8)
 def load_experiments(jalon_num):
     candidates = [
@@ -193,6 +220,20 @@ def load_thermographie_stats():
             return float(stats["mean"]), float(stats["std"])
     return 47.58, 4.48
 
+
+@lru_cache(maxsize=1)
+def load_thermal_threshold():
+    """95e percentile du score max sur les images saines de validation."""
+    model = load_autoencoder_model()
+    data = load_thermographie_data()
+    if model is None or data is None:
+        return None
+    mean_th, std_th = load_thermographie_stats()
+    healthy = ((data["X_val"].astype(np.float32) - mean_th) / std_th)[..., None]
+    reconstructed = model.predict(healthy, verbose=0)
+    scores = np.max((healthy - reconstructed) ** 2, axis=(1, 2, 3))
+    return float(np.percentile(scores, 95))
+
 def infer_thermal_image(img_input):
     """
     Accepte une image PIL ou un tableau NumPy 2D (24, 40) et retourne:
@@ -201,7 +242,7 @@ def infer_thermal_image(img_input):
     - diff_2d (24, 40)
     - mse (float)
     - max_err (float)
-    - is_anomaly (bool)
+    - is_anomaly (bool), anomaly_score, validation_threshold
     """
     model = load_autoencoder_model()
     mean_th, std_th = load_thermographie_stats()
@@ -222,21 +263,22 @@ def infer_thermal_image(img_input):
     arr_norm = (arr - mean_th) / std_th
     tensor = arr_norm.reshape(1, 24, 40, 1)
 
-    if model is not None:
-        recon_norm = model.predict(tensor, verbose=0)[0, :, :, 0]
-        recon = recon_norm * std_th + mean_th
-    else:
-        # Fallback if model not found
-        recon = np.full((24, 40), mean_th)
+    if model is None:
+        raise RuntimeError("Modèle thermique introuvable")
+    recon_norm = model.predict(tensor, verbose=0)[0, :, :, 0]
+    recon = recon_norm * std_th + mean_th
 
     diff = np.abs(arr - recon)
     mse = float(np.mean((arr - recon) ** 2))
     max_err = float(np.max(diff))
-    # Threshold from Jalon 2 calibrated at 95th percentile on validation set (~2.38°C)
-    seuil_max = 0.5303 * std_th if std_th < 10 else 2.38
-    is_anomaly = max_err > seuil_max
+    # Jalon 2: score = maximum des erreurs quadratiques normalisées.
+    score = float(np.max((arr_norm - recon_norm) ** 2))
+    seuil_max = load_thermal_threshold()
+    if seuil_max is None:
+        raise RuntimeError("Modèle ou validation thermique introuvable")
+    is_anomaly = score > seuil_max
 
-    return arr, recon, diff, mse, max_err, is_anomaly, seuil_max
+    return arr, recon, diff, mse, max_err, is_anomaly, score, seuil_max
 
 def infer_sky_image(img_input):
     """
@@ -280,7 +322,8 @@ def prepare_simulation_inputs(df, site="A", idx=100, L=48):
     if idx < L or idx + H >= len(df):
         return None, None, None, None, None
 
-    x_hist = passe[idx - L : idx].reshape(1, L, 6)
+    # Le notebook J4 inclut l'heure t dans l'historique et prédit t+1...t+6.
+    x_hist = passe[idx - L + 1 : idx + 1].reshape(1, L, 6)
     x_fut = connu[idx + 1 : idx + 1 + H].reshape(1, H, 5)
     y_true = p[idx + 1 : idx + 1 + H] * cap
 
