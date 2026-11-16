@@ -196,13 +196,13 @@ function Content({ page }: { page: number }) {
             <span>Image<br />thermique</span><ArrowRight size={14} /><span>Encodeur</span><ArrowRight size={14} /><span className="j2-ae-bottleneck">Goulot<br />32 dim</span><ArrowRight size={14} /><span>Décodeur</span><ArrowRight size={14} /><span>Image<br />reconstruite</span>
           </div>
           <p className="j2-thermal-copy">Entraîné sur des images saines, le modèle les reconstruit. Une erreur de reconstruction élevée peut signaler un défaut.</p>
-          <h3 className="small-title j2-section-title">Choix du goulot · validation proxy</h3>
-          <Table headers={['Goulot', 'AUC proxy MSE / max', 'Seuil max']} rows={j2Thermal.map(x => [`${x.latent} dim`, `${nf(x.mseAuc, 1)} / ${nf(x.maxAuc, 1)}`, nf(x.maxSeuil, 4)])} emphasis={[1]} />
+          <h3 className="small-title j2-section-title">Choix du goulot · validation</h3>
+          <Table headers={['Goulot', 'MSE reconstruction saine', 'Seuil max']} rows={j2Thermal.map(x => [`${x.latent} dim`, nf(x.valLoss, 4), nf(x.maxSeuil, 4)])} emphasis={[1]} />
           <div className="j2-thermal-copy"><b>Pourquoi 32 ?</b>
             <ul className="j2-choice-reasons">
-              <li>Même AUC proxy pour les trois goulots : <b>1,0</b>.</li>
-              <li>32 offre le meilleur compromis entre compression et reconstruction.</li>
-              <li>Seuil sain fixé à <b>0,2442</b>.</li>
+              <li>Le proxy synthétique ne départage pas les modèles à la précision affichée.</li>
+              <li>Parmi les AUC proches du maximum, priorité au score max puis au goulot <b>32</b>.</li>
+              <li>Seuil max au 95ᵉ percentile sain : <b>0,2442</b>.</li>
             </ul>
           </div>
         </Card>

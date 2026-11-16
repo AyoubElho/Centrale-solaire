@@ -224,8 +224,9 @@ Ici, nous utilisons un **Auto-Encodeur Convolutif (CAE)** pour détecter automat
 
 **1. Sélection sans fuite du test :**
 - Trois goulots (16, 32 et 128) et deux scores (MSE et maximum) sont comparés sur un proxy de validation.
-- Même AUC proxy pour les trois goulots : **1,0**.
-- Le goulot **32** offre le meilleur compromis entre compression et reconstruction.
+- L'AUC proxy affichée est **1,0000** pour les trois goulots et les deux scores : les défauts synthétiques sont facilement séparables dans cette validation. Cette saturation ne démontre pas une performance parfaite sur des défauts réels.
+- Le tableau présente aussi la MSE finale de reconstruction sur validation saine : **0,0152**, **0,0144** et **0,0143** pour les goulots 16, 32 et 128 respectivement.
+- Parmi les configurations dont l'AUC proxy est à moins de **0,002** de la meilleure, la règle du notebook privilégie le score maximum, adapté aux défauts localisés, puis le goulot le plus proche de **32**. La MSE de reconstruction affichée ne constitue pas le critère de sélection.
 - Il compresse la représentation **60 fois** et limite le risque de reconstruire les anomalies.
 - Le seuil **0,2442** correspond au 95e percentile de la validation saine.
 

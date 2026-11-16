@@ -61,9 +61,9 @@ export const j2Forecast = [
 {h:'t+4',base:58.93,vision:59.32,test:62.90},{h:'t+5',base:65.08,vision:64.41,test:68.97},{h:'t+6',base:68.14,vision:67.52,test:72.47}
 ];
 export const j2Thermal = [
-{latent:16,mseAuc:1,maxAuc:1,mseSeuil:.0186,maxSeuil:.2553},
-{latent:32,mseAuc:1,maxAuc:1,mseSeuil:.0174,maxSeuil:.2442},
-{latent:128,mseAuc:1,maxAuc:1,mseSeuil:.0171,maxSeuil:.2531}
+{latent:16,valLoss:.0152,maxSeuil:.2553},
+{latent:32,valLoss:.0144,maxSeuil:.2442},
+{latent:128,valLoss:.0143,maxSeuil:.2531}
 ];
 export const j3Validation = [
 {model:'Zero-shot A → B',gain:.42234721779823303,params:0},{model:'Apprentissage B seul',gain:.38925155997276306,params:5350},
