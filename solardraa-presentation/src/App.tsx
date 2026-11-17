@@ -200,9 +200,9 @@ function Content({ page }: { page: number }) {
           <Table headers={['Goulot', 'MSE reconstruction saine', 'Seuil max']} rows={j2Thermal.map(x => [`${x.latent} dim`, nf(x.valLoss, 4), nf(x.maxSeuil, 4)])} emphasis={[1]} />
           <div className="j2-thermal-copy"><b>Pourquoi 32 ?</b>
             <ul className="j2-choice-reasons">
-              <li>Le proxy synthétique ne départage pas les modèles à la précision affichée.</li>
-              <li>Parmi les AUC proches du maximum, priorité au score max puis au goulot <b>32</b>.</li>
-              <li>Seuil max au 95ᵉ percentile sain : <b>0,2442</b>.</li>
+              <li>Les trois modèles détectent aussi bien les défauts simulés, selon les résultats affichés.</li>
+              <li>On choisit le goulot <b>32</b> et l’erreur maximale, adaptée aux petits défauts localisés.</li>
+              <li>Le seuil <b>0,2442</b> est fixé pour obtenir environ 5 % de fausses alertes sur les panneaux sains de validation.</li>
             </ul>
           </div>
         </Card>

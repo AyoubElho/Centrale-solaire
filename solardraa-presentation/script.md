@@ -220,24 +220,19 @@ Ici, nous montrons comment les photos du ciel aident à mieux prévoir la produc
 ---
 ### Slide 13 – Détection des défauts par Auto-Encodeur (CAE)
 
-Ici, nous utilisons un **Auto-Encodeur Convolutif (CAE)** pour détecter automatiquement les anomalies thermiques des panneaux solaires grâce à la thermographie.
 
-**1. Sélection sans fuite du test :**
-- Trois goulots (16, 32 et 128) et deux scores (MSE et maximum) sont comparés sur un proxy de validation.
-- L'AUC proxy affichée est **1,0000** pour les trois goulots et les deux scores : les défauts synthétiques sont facilement séparables dans cette validation. Cette saturation ne démontre pas une performance parfaite sur des défauts réels.
-- Le tableau présente aussi la MSE finale de reconstruction sur validation saine : **0,0152**, **0,0144** et **0,0143** pour les goulots 16, 32 et 128 respectivement.
-- Parmi les configurations dont l'AUC proxy est à moins de **0,002** de la meilleure, la règle du notebook privilégie le score maximum, adapté aux défauts localisés, puis le goulot le plus proche de **32**. La MSE de reconstruction affichée ne constitue pas le critère de sélection.
-- Il compresse la représentation **60 fois** et limite le risque de reconstruire les anomalies.
-- Le seuil **0,2442** correspond au 95e percentile de la validation saine.
+Nous avons testé trois configurations :
 
-**2. Les résultats sur le test :**
+L'**auto-encodeur** apprend à reconstruire les images thermiques de panneaux sains. Une erreur de reconstruction élevée peut révéler un défaut.
 
-- **AUC thermique : 0,9859 — objectif atteint** (objectif : AUC ≥ 0,98). L'AUC mesure la capacité du modèle à distinguer les images saines des images défectueuses. Une valeur proche de 1 indique une excellente séparation entre les deux catégories.
-- **Détection des fissures : 88 %**, pour une cible d'au moins 85 %, avec **4,92 % de fausses alertes** sur le test : objectif atteint.
-- **Méthode de référence : AUC de 0,9739**, avec le score « maximum − médiane ».
-- Les hotspots, diodes et sous-modules sont détectés à **100 %** dans ce test.
+**1. Choix du modèle :**
+- Les goulots **16, 32 et 128** détectent aussi bien les défauts simulés à la précision affichée. On choisit le goulot **32** et l'erreur maximale, adaptée aux petits défauts localisés.
+- Le seuil **0,2442** est fixé pour obtenir environ 5 % de fausses alertes sur les panneaux sains de validation.
 
-« Ce graphique présente les résultats de l’Auto-Encodeur sur le test final. Les quatre défauts dépassent la cible de 85 %. Son AUC de 0,986, contre 0,974 pour la référence, confirme sa bonne capacité de détection. »
+**2. Résultats sur le test :**
+- L'auto-encodeur atteint une **AUC de 0,9859**, contre **0,9739** pour la méthode de référence.
+- Il détecte **88 % des fissures**, avec **4,92 % de fausses alertes** : les deux objectifs sont atteints.
+- Sur ce test, les hotspots, les défauts de diodes et de sous-modules sont détectés à **100 %**.
 
 ---
 
