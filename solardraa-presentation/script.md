@@ -21,7 +21,7 @@
 ### slide 1
 Bonjour à tous. Nous vous présentons aujourd'hui notre projet Drâa Solaire : « Prévoir l'énergie, comprendre le ciel ».
 
-Notre but est simple : utiliser l'intelligence artificielle pour mieux prévoir la production d'électricité solaire, surveiller l'état des panneaux avec des caméras, et adapter facilement nos modèles à une nouvelle centrale solaire.
+Notre but est simple : utiliser le deep learning pour mieux prévoir la production d'électricité solaire, surveiller l'état des panneaux avec des caméras, et adapter facilement nos modèles à une nouvelle centrale solaire.
 
 ---
 
@@ -74,7 +74,7 @@ Pour réaliser ce travail, nous suivons une méthode en cinq étapes :
 
 1. **Collecte** : récupérer les mesures météo, la production et les images des sites A et B.
 2. **Préparation** : nettoyer les données, les mettre à la même échelle et créer des fenêtres de temps.
-3. **Modélisation** : entraîner nos modèles d'IA (MLP, CNN, auto-encodeurs, GRU).
+3. **Modélisation** : entraîner nos modèles de deep learning (MLP, CNN, auto-encodeurs, GRU).
 4. **Évaluation** : mesurer les erreurs avec le RMSE, le MAE, et calculer notre gain par rapport à une méthode simple.
 5. **Décision** : choisir les meilleurs modèles pour prévoir la production et surveiller les panneaux.
 
