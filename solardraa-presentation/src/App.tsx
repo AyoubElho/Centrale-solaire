@@ -181,9 +181,10 @@ function Content({ page }: { page: number }) {
           </Card>
         </div>
       </div>
-      <div className="grid md:grid-cols-2 gap-2 mt-1">
+      <div className="grid md:grid-cols-3 gap-2 mt-1">
         <ImagePlate name="jalon2_cnn_vs_regles_notebook" title="CNN ciel vs règles simples" desc="MAE de l'image courante · test final" wide notebook />
         <ImagePlate name="jalon2_camera_examples_notebook" title="Exemples caméra : valeurs vraies et prédictions CNN" desc="Quatre images du jeu de test" wide notebook />
+        <ImagePlate name="jalon2_gain_prevision_notebook" title="Gain de prévision par horizon" desc="Barres : validation · titre : gain t+1 du modèle retenu en test final" wide notebook />
       </div>
       <Source paths={[slideSource[1], 'experiments/journal_experiences_jalon2.csv', 'docs/decisions/PAGE_DE_DECISIONS_JALON2.md']} />
     </>;
